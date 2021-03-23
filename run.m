@@ -14,6 +14,7 @@ function varargout = run(stepsOrData, pauseLen, makeVideo, filter_name)
 
 
 addpath([cd, filesep, 'lib'])
+
 if ~exist('pauseLen','var') || isempty(pauseLen)
     pauseLen = 0.3; % seconds
 end
@@ -58,6 +59,10 @@ alphas = [0.00025 0.00005 0.0025 0.0005 0.0025 0.0005].^2; % variance of noise p
 % Standard deviation of Gaussian sensor noise (independent of distance)
 beta = deg2rad(5);
 
+%NEW CODE
+parseObj = dataparse;
+RB_1 = parseObj.parse_robot(1,1);
+
 persistent data numSteps;
 if isempty(stepsOrData) % use dataset from last time
     if isempty(data)
@@ -77,12 +82,13 @@ else
     FIELDINFO = getfieldinfo;
 end
 
-results = zeros(7,numSteps);
-sys = system_initialization(alphas, beta);
+%results = zeros(7,numSteps);
+%sys = system_initialization(alphas, beta);
 
-filter = filter_initialization(sys, initialStateMean, initialStateCov, filter_name);
-
+%filter = filter_initialization(sys, initialStateMean, initialStateCov, filter_name);
+pauseLen
 for t = 1:numSteps
+    %{
     %=================================================
     % data available to your filter at this time step
     %=================================================
@@ -107,12 +113,18 @@ for t = 1:numSteps
     % noisefree observation
     noisefreeBearing_1 = data(t, 10);
     noisefreeBearing_2 = data(t, 13);
-    
+    %}
     %=================================================
     % graphics
     %=================================================
-    figure(GLOBAL_FIGURE); clf; hold on; plotfield(observation(2)); plotfield(observation(5));
+    observation = [200, 200];
+    figure(GLOBAL_FIGURE); clf; hold on; plotfield(observation(1)); plotfield(observation(2));
+    
+    
+    plot(RB_1(1:t,1), RB_1(1:t,2), 'Color', ACTUAL_PATH_COL, 'linewidth', 2);
 
+
+    %{
     % draw actual path and path that would result if there was no noise in
     % executing the motion command
     plot([initialStateMean(1) data(1,16)], [initialStateMean(2) data(1,17)], 'Color', ACTUAL_PATH_COL);
@@ -134,13 +146,14 @@ for t = 1:numSteps
     plot([x x+cos(theta+noisefreeBearing_1)*100], [y y+sin(theta+noisefreeBearing_1)*100], 'Color', NOISEFREE_BEARING_COLOR, 'linewidth', 2);
     plot([x x+cos(theta+noisefreeBearing_2)*100], [y y+sin(theta+noisefreeBearing_2)*100], 'Color', NOISEFREE_BEARING_COLOR, 'linewidth', 2);
     set(gca, 'fontsize', 14)
+    %}
     drawnow limitrate
-
+    
     %=================================================
     %TODO: update your filter here based upon the
     %      motionCommand and observation
     %=================================================
-    
+    %{
     switch filter_name
         case {"EKF", "UKF"}
            filter.prediction(motionCommand);
@@ -165,14 +178,16 @@ for t = 1:numSteps
             %% Uncomment to run for bonus points
             % results(:,t) = mahalanobis(filter,data(t,16:18));
     end
+    %}
         
 
     if pauseLen == inf
+        ggg=2
         pause;
     elseif pauseLen > 0
         pause(pauseLen);
     end
-
+    %{
     if makeVideo
         F = getframe(gcf);
         switch votype
@@ -184,6 +199,7 @@ for t = 1:numSteps
             error('unrecognized votype');
         end
     end
+    %}
 end
 
 %% Uncomment to run for bonus points
