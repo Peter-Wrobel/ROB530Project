@@ -12,9 +12,7 @@ function varargout = run(stepsOrData, pauseLen, makeVideo, filter_name)
 %      DATA - is an optional output and contains the data array generated
 %             and/or used during the simulation.
 
-
 addpath([cd, filesep, 'lib'])
-
 if ~exist('pauseLen','var') || isempty(pauseLen)
     pauseLen = 0.3; % seconds
 end
@@ -53,15 +51,14 @@ deltaT = 0.1;
 initialStateMean = [180 50 0]';
 initialStateCov = eye(3);
 
+% Identify the number of robots
+  Num = 2;
+  
 % Motion noise (in odometry space, see Table 5.5, p.134 in book).
 alphas = [0.00025 0.00005 0.0025 0.0005 0.0025 0.0005].^2; % variance of noise proportional to alphas
 
 % Standard deviation of Gaussian sensor noise (independent of distance)
 beta = deg2rad(5);
-
-%NEW CODE
-parseObj = dataparse;
-RB_1 = parseObj.parse_robot(1,1);
 
 persistent data numSteps;
 if isempty(stepsOrData) % use dataset from last time
@@ -82,13 +79,12 @@ else
     FIELDINFO = getfieldinfo;
 end
 
-%results = zeros(7,numSteps);
-%sys = system_initialization(alphas, beta);
+results = zeros(7,numSteps);
+sys = system_initialization(alphas, beta);
 
-%filter = filter_initialization(sys, initialStateMean, initialStateCov, filter_name);
-pauseLen
+filter = filter_initialization(sys, initialStateMean, initialStateCov, filter_name,Num);
+
 for t = 1:numSteps
-    %{
     %=================================================
     % data available to your filter at this time step
     %=================================================
@@ -113,18 +109,12 @@ for t = 1:numSteps
     % noisefree observation
     noisefreeBearing_1 = data(t, 10);
     noisefreeBearing_2 = data(t, 13);
-    %}
+    
     %=================================================
     % graphics
     %=================================================
-    observation = [200, 200];
-    figure(GLOBAL_FIGURE); clf; hold on; plotfield(observation(1)); plotfield(observation(2));
-    
-    
-    plot(RB_1(1:t,1), RB_1(1:t,2), 'Color', ACTUAL_PATH_COL, 'linewidth', 2);
+    figure(GLOBAL_FIGURE); clf; hold on; plotfield(observation(2)); plotfield(observation(5));
 
-
-    %{
     % draw actual path and path that would result if there was no noise in
     % executing the motion command
     plot([initialStateMean(1) data(1,16)], [initialStateMean(2) data(1,17)], 'Color', ACTUAL_PATH_COL);
@@ -146,48 +136,45 @@ for t = 1:numSteps
     plot([x x+cos(theta+noisefreeBearing_1)*100], [y y+sin(theta+noisefreeBearing_1)*100], 'Color', NOISEFREE_BEARING_COLOR, 'linewidth', 2);
     plot([x x+cos(theta+noisefreeBearing_2)*100], [y y+sin(theta+noisefreeBearing_2)*100], 'Color', NOISEFREE_BEARING_COLOR, 'linewidth', 2);
     set(gca, 'fontsize', 14)
-    %}
     drawnow limitrate
-    
+
     %=================================================
     %TODO: update your filter here based upon the
     %      motionCommand and observation
     %=================================================
-    %{
+    
     switch filter_name
         case {"EKF", "UKF"}
            filter.prediction(motionCommand);
            filter.correction(observation);
            draw_ellipse(filter.mu(1:2), filter.Sigma(1:2,1:2),9)
-           %% Uncomment to run for bonus points
-           % results(:,t) = mahalanobis(filter,data(t,16:18));
+%%           % Uncomment to run for bonus points
+%              results(:,t) = mahalanobis(filter,data(t,16:18),filter_name);
         case "PF"
             hp = plot(filter.particles(1,:), filter.particles(2,:),'.','Color', [[0.2980 .6 0], .25]);
             filter.prediction(motionCommand);
             filter.correction(observation);
             set(hp,'XData',filter.particles(1,:),'YData', filter.particles(2,:));
             draw_ellipse(filter.mu(1:2), filter.Sigma(1:2,1:2), 9)
-            %% Uncomment to run for bonus points
-            % results(:,t) = mahalanobis(filter,data(t,16:18));
+%%          % Uncomment to run for bonus points
+%             results(:,t) = mahalanobis(filter,data(t,16:18),filter_name);
         case "InEKF"
             filter.prediction(motionCommand)
             filter.correction(Y, Y2, observation(3), observation(6));
             ellipse_plotter(filter);
-            %% Uncomment to run for bonus points
-            % lieTocartesian(filter);
-            %% Uncomment to run for bonus points
-            % results(:,t) = mahalanobis(filter,data(t,16:18));
+          % Uncomment to run for bonus points
+            lieTocartesian(filter);
+%%          % Uncomment to run for bonus points
+%            results(:,t) = mahalanobis(filter,data(t,16:18),filter_name);
     end
-    %}
         
 
     if pauseLen == inf
-        ggg=2
         pause;
     elseif pauseLen > 0
         pause(pauseLen);
     end
-    %{
+
     if makeVideo
         F = getframe(gcf);
         switch votype
@@ -199,7 +186,6 @@ for t = 1:numSteps
             error('unrecognized votype');
         end
     end
-    %}
 end
 
 %% Uncomment to run for bonus points
@@ -233,6 +219,7 @@ end
 % ylabel('\theta', 'fontsize', 14)
 % xlabel('Iterations', 'fontsize', 14)
 
+%%
 if nargout >= 1
     varargout{1} = data;
 end
