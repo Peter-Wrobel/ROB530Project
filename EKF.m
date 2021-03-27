@@ -23,28 +23,28 @@ classdef EKF < handle
     methods
         function obj = EKF(sys, init)
             % Identify the number of robots
-             obj.Num = init.Num;
+              obj.Num = init.Num;
              
             % motion model
-            obj.gfun = sys.gfun;
-            
+              obj.gfun = sys.gfun;
+             
             % measurement model
-            obj.hfun_relative = sys.hfun_relative;
-            obj.hfun_landmark = sys.hfun_landmark;
+              obj.hfun_relative = sys.hfun_relative;
+              obj.hfun_landmark = sys.hfun_landmark;
             
             % Jocabian of motion model
-            obj.Gfun = init.Gfun;
-            obj.Vfun = init.Vfun;
+              obj.Gfun = init.Gfun;
+              obj.Vfun = init.Vfun;
             
             % motion noise covariance
-            obj.M = sys.M;
+              obj.M = sys.M;
             
             % measurement noise covariance
-            obj.Q = sys.Q;
+              obj.Q = sys.Q;
             
             % initial mean and covariance
-            obj.mu = init.mu;
-            obj.Sigma = init.Sigma;
+              obj.mu = init.mu;
+              obj.Sigma = init.Sigma;
         end
         
         %% Complete prediction function for all robots
@@ -81,27 +81,31 @@ classdef EKF < handle
              z_hat = zeros(2*obj.Num*(obj.Num-1),1);
              H_local = zeros(2*obj.Num*(obj.Num-1),3*obj.Num);
            % Loop through all pairs of robots
-             for k = 1 : obj.Num 
-                 for kk = 1 : obj.Num-1
+             for i = 1 : obj.Num
+                 jj = 0;
+                 for j = 1 : obj.Num
+                   if i ~= j
+                     jj = jj + 1;
                    % Compute the anticipated measurements  
-                     z_hat(2*(obj.Num-1)*(k-1) + 2*(kk-1)+1 : 2*(obj.Num-1)*(k-1) + 2*kk,1) = ...
-                         obj.hfun(obj.mu_pred(3*(k-1)+1,3*k), obj.mu_pred(3*(kk-1)+1,3*kk));
+                     z_hat(2*(obj.Num-1)*(i-1) + 2*(jj-1)+1 : 2*(obj.Num-1)*(i-1) + 2*jj,1) = ...
+                         obj.hfun_relative(obj.mu_pred(3*(i-1)+1:3*i,1), obj.mu_pred(3*(j-1)+1:3*j,1));
                    % Construct the Jacobian H
                    % Current version takes all relative measurements into account
                      [H_bearing_i,H_bearing_j,H_range_i,H_range_j] = ...
-                         H_relative(obj.mu_pred(3*(k-1)+1,3*k),obj.mu_pred(3*(kk-1)+1,3*kk));
+                         H_relative(obj.mu_pred(3*(i-1)+1:3*i,1),obj.mu_pred(3*(j-1)+1:3*j,1));
                      flag_usage = determine_usage();
                    % Judge whether to fuse the current relative measurement
                      if flag_usage
-                        H_local(2*(obj.Num-1)*(k-1)+2*(kk-1)+1,3*(k-1)+1:3*k) =...
+                        H_local(2*(obj.Num-1)*(i-1)+2*(jj-1)+1,3*(i-1)+1:3*i) =...
                                    H_bearing_i;
-                        H_local(2*(obj.Num-1)*(k-1)+2*(kk-1)+1,3*kk+1:3*kk+3) =...
+                        H_local(2*(obj.Num-1)*(i-1)+2*(jj-1)+1,3*(j-1)+1:3*j) =...
                                    H_bearing_j;
-                        H_local(2*(obj.Num-1)*(k-1)+2*kk,3*(k-1)+1:3*k) =...
+                        H_local(2*(obj.Num-1)*(i-1)+2*jj,3*(i-1)+1:3*i) =...
                                    H_range_i;
-                        H_local(2*(obj.Num-1)*(k-1)+2*kk,3*kk+1:3*kk+3) =...
+                        H_local(2*(obj.Num-1)*(i-1)+2*jj,3*(j-1)+1:3*j) =...
                                    H_range_j;       
                      end
+                   end
                      
                  end
              end
@@ -109,7 +113,7 @@ classdef EKF < handle
           % stack the measurement noise
             Q_stack = zeros(2*obj.Num*(obj.Num-1),2*obj.Num*(obj.Num-1));
             for i = 1 : obj.Num*(obj.Num-1)
-                Q_stack(2*(i-1)+1:2i , 2*(i-1)+1:2i) = obj.Q;
+                Q_stack(2*(i-1)+1:2*i , 2*(i-1)+1:2*i) = obj.Q;
             end
           % innovation covariance
             S = H_local * obj.Sigma_pred * H_local' + Q_stack;
@@ -132,32 +136,11 @@ classdef EKF < handle
             end
             
           % Joseph update form
-            I = eye(length(obj.mu));
-            obj.Sigma = (I - K * H_local) * obj.Sigma_pred * (I - K * H_local)' ...
+            i = eye(length(obj.mu));
+            obj.Sigma = (i - K * H_local) * obj.Sigma_pred * (i - K * H_local)' ...
                     + K * Q_stack * K'; 
         end
-        
-        %% The following function computes the block of jacobian caused by
-        % relative bearing measurement
-        function [H_bearing_i,H_bearing_j,H_range_i,H_range_j] = H_relative(pos_i,pos_j)
-        % For details of the following equation, readers are refered to
-        % eq.(11) in Agostino et al. 2005
-          delta_x = pos_j(1) - pos_i(1);
-          delta_y = pos_j(2) - pos_j(2);
-          H_bearing_i = [delta_y/(delta_x^2 + delta_y^2), -delta_x/(delta_x^2 + delta_y^2),-1];
-          H_bearing_j = [-delta_y/(detla_x^2 + delta_y^2),delta_x/(delta_x^2 + delta_y^2),0];
-        % For details of the following equation, readers are refered to
-        % eq.(12) in Agostino et al. 2005 
-          H_range_i = [-delta_x/sqrt(delta_x^2+delta_y^2),-delta_y/sqrt(delta_x^2+delta_y^2),0];
-          H_range_j = [delta_x/sqrt(delta_x^2+delta_y^2),delta_y/sqrt(delta_x^2+delta_y^2),0];
-        end
-        
-        %% The following function determines whether the relative
-        % measurement is reliable or not
-         function [flag] = determine_usage()
-             flag = 1;
-         end
-        
+       
     end
 end
 

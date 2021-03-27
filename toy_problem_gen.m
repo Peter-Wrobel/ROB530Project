@@ -7,6 +7,7 @@ function [X_ground_truth,measurement_z,action_for_robots] = toy_problem_gen(delt
   alphas = [0.00025 0.00005 ...
             0.0025 0.0005 ...
             0.0025 0.0005].^2; 
+  beta = deg2rad(5);
   
 % Stipulate the inputs for robot1 (current version is noiseless)
   action_for_robot1 = (-1) .* ones(3,numSteps-1);
@@ -78,9 +79,9 @@ function [X_ground_truth,measurement_z,action_for_robots] = toy_problem_gen(delt
             [bearing,range] =...
             measurement_generation(X_ground_truth(3*(i-1)+1:3*i,k),...
                                    X_ground_truth(3*(j-1)+1:3*j,k));
-                             
-            measurement_z(2*(Num-1)*(i-1) + 2*(jj-1)+1,k) = bearing;
-            measurement_z(2*(Num-1)*(i-1) + 2*jj,k) = range;
+          % measurement noises should be taken into account here
+            measurement_z(2*(Num-1)*(i-1) + 2*(jj-1)+1,k) = bearing + beta*rand;
+            measurement_z(2*(Num-1)*(i-1) + 2*jj,k) = range + 25*rand;
           end
       end
     end
