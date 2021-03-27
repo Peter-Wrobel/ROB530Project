@@ -17,18 +17,5 @@ switch filter_name
         init.Num = Num;
         
         filter = EKF(sys, init);
-          
-    case "PF"
-        init.mu = initialStateMean;
-        init.Sigma = 0.001 * eye(3);
-        init.n = 500;
-        init.particles = zeros(3, init.n);
-        init.particle_weight = zeros(init.n, 1);
-        L = chol(init.Sigma,'lower');
-        for i = 1:init.n
-            init.particles(:,i) = L*randn(3,1) + init.mu(:,1);
-            init.particle_weight(i) = 1/init.n;
-        end
-        filter = PF(sys, init);
 end
 end

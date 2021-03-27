@@ -1,14 +1,22 @@
 function sys = system_initialization(alphas, beta)
-% The following motion model comems from
+
+%% The following motion model comems from HW5
 sys.gfun = @(mu, u) [...
     mu(1) + (-u(1) / u(2) * sin(mu(3)) + u(1) / u(2) * sin(mu(3) + u(2)));
     mu(2) + ( u(1) / u(2) * cos(mu(3)) - u(1) / u(2) * cos(mu(3) + u(2)));
     mu(3) + u(2) + u(3)];
 
-%% The following measurement model comes from
-sys.hfun = @(landmark_x, landmark_y, mu_pred) [...
+%% The following relative measurement model comes from Agostino
+%  And the measurement model involves landmark comes from HW5
+
+sys.hfun_landmark = @(landmark_x, landmark_y, mu_pred) [...
     wrapToPi(atan2(landmark_y - mu_pred(2), landmark_x - mu_pred(1)) - mu_pred(3));
     sqrt((landmark_y - mu_pred(2))^2 + (landmark_x - mu_pred(1))^2)];
+
+sys.hfun_relative = @(pos_i, pos_j) [...
+    wrapToPi(atan((-sin(pos_i(3))*(pos_j(1) - pos_i(1))+cos(pos_i(3))*(pos_j(2) - pos_i(2)))...
+                 /( cos(pos_i(3))*(pos_j(1) - pos_i(1))+sin(pos_i(3))*(pos_j(2) - pos_i(2)))));
+    sqrt((pos_j(1) - pos_i(1))^2 + (pos_j(2) - pos_i(2))^2)];
 
 %%
 sys.M = @(u) [...
@@ -16,6 +24,7 @@ sys.M = @(u) [...
     0, alphas(3)*u(1)^2+alphas(4)*u(2)^2, 0;
     0, 0, alphas(5)*u(1)^2+alphas(6)*u(2)^2];
 
+%% 
 sys.Q = [...
         beta^2,    0;
         0,      25^2];

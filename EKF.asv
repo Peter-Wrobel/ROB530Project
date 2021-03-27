@@ -152,7 +152,7 @@ classdef EKF < handle
           H_range_j = [delta_x/sqrt(delta_x^2+delta_y^2),delta_y/sqrt(delta_x^2+delta_y^2),0];
         end
         
-        %% The following function determines whether the relative
+        % The following function determines whether the relative
         % measurement is reliable or not
          function [flag] = determine_usage()
              flag = 1;
