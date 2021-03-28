@@ -51,7 +51,11 @@ for t = 1 : numSteps-1
     switch filter_name
         case {"EKF"}
            filter.prediction(motionCommand);
-           filter.correction(observation);
+%            filter.correction_relative(observation);
+           filter.correction_landmark(observation);
+           
+           filter.correction_batch(observation, observation);
+
 %            draw_ellipse(filter.mu(1:2), filter.Sigma(1:2,1:2),9)
     end
          filtered_robot1(:,t) = filter.mu(1:3,1);
