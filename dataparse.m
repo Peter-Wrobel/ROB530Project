@@ -3,9 +3,18 @@
 classdef dataparse
    methods
        
-      function res = func1(obj,a)
-         res = a * 5; 
+      function table_ans = parse_landmark(obj,dataset_num)
+        path_str = strcat("data/MRCLAM_Dataset", int2str(dataset_num), "/");
+        
+
+        lmfile = strcat(path_str,robot_str, "Landmark_Groundtruth.dat");
+        
+        LM_GT= readtable(lmfile);
+        table_ans = table2array(LM_GT);
       end
+       
+       
+       
       
       function res = parse_robot(obj,dataset_num, robot_num)
         path_str = strcat("data/MRCLAM_Dataset", int2str(dataset_num), "/");
@@ -29,6 +38,7 @@ classdef dataparse
 
       end
         
+      %returns polar coordinates of robot2 relative to robot1
       function reso = rel_measure(obj ,RB_GT1, RB_GT2, var)
           
           x1 = RB_GT1(:,2);
@@ -36,7 +46,8 @@ classdef dataparse
           x2 = RB_GT2(:,2);
           y2=  RB_GT2(:,3);
 
-          range = sqrt((x2-x1).^2 +(y2-y1).^2) + normrnd(0,var,size(x2)); 
+          range = sqrt((x2-x1).^2 +(y2-y1).^2);
+          range = range + normrnd(0,var,size(x2)); 
           theta = atan2((y2-y1),(x2-x1));
           
           reso = [theta, range];
