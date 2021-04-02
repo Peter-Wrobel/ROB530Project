@@ -19,7 +19,7 @@ function run_fused(numSteps, filter_name, if_toy_prob)
    % Standard deviation of Gaussian sensor noise (independent of distance)
      beta = deg2rad(5);
    % generate the data set for the toy problem
-     [X_ground_truth,measurement_z,action_for_robots] = toy_problem_gen(deltaT,numSteps);
+     [X_ground_truth,landmark,measurement_z,action_for_robots] = toy_problem_gen(deltaT,numSteps);
      
      initialStateMean = X_ground_truth(:,1);
      initialStateCov = eye(3*Num);
@@ -53,10 +53,12 @@ for t = 1 : numSteps-1
            filter.prediction(motionCommand);
 %            filter.correction_relative(observation);
            filter.correction_landmark(observation);
-           
            filter.correction_batch(observation, observation);
+%          draw_ellipse(filter.mu(1:2), filter.Sigma(1:2,1:2),9)
+       case {"PF"}
+           filter.prediction(motionCommand);
+           filter.correction(observation);
 
-%            draw_ellipse(filter.mu(1:2), filter.Sigma(1:2,1:2),9)
     end
          filtered_robot1(:,t) = filter.mu(1:3,1);
          filtered_robot2(:,t) = filter.mu(4:6,1);

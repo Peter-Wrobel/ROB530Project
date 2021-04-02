@@ -1,9 +1,10 @@
-function [X_ground_truth,measurement_z,action_for_robots] = toy_problem_gen(deltaT,numSteps)
+function [X_ground_truth,landmark,measurement_z_landmark,action_for_robots] ...
+                                         = toy_problem_gen(deltaT,numSteps)
 
 %% The following parameters will be supplied as inputs later
-
   Num = 2; % number of robots
-% Motion noise (see HW5)
+  landmark = [0 5]'; % position of landmarks
+  % Motion noise (see HW5)
   alphas = [0.00025 0.00005 ...
             0.0025 0.0005 ...
             0.0025 0.0005].^2; 
@@ -67,8 +68,12 @@ function [X_ground_truth,measurement_z,action_for_robots] = toy_problem_gen(delt
   
 %% Current measurement function only works for two robots
 % Generate the measurement matrix z whose size is 2*Num*(Num-1) X stepsOrData-1
-  measurement_z = NaN .* zeros(2*Num*(Num-1),numSteps);
+% Assume that all robots are mutually observable
+  measurement_z_relative = NaN .* zeros(2*Num*(Num-1),numSteps);
+% Only the nearest landmark is considered in current problem 
+  measurement_z_landmark = NaN .* zeros(2*Num,numSteps);
   for k = 1 : numSteps
+    %% Generate relative measurement  
     for i = 1 : Num
       jj = 0;
       for j = 1 : Num
@@ -77,13 +82,19 @@ function [X_ground_truth,measurement_z,action_for_robots] = toy_problem_gen(delt
           if j ~= i
             jj = jj + 1;  
             [bearing,range] =...
-            measurement_generation(X_ground_truth(3*(i-1)+1:3*i,k),...
-                                   X_ground_truth(3*(j-1)+1:3*j,k));
+            relative_measurement_generation(X_ground_truth(3*(i-1)+1:3*i,k),...
+                                            X_ground_truth(3*(j-1)+1:3*j,k));
           % measurement noises should be taken into account here
-            measurement_z(2*(Num-1)*(i-1) + 2*(jj-1)+1,k) = bearing + beta*rand;
-            measurement_z(2*(Num-1)*(i-1) + 2*jj,k) = range + 25*rand;
+            measurement_z_relative(2*(Num-1)*(i-1) + 2*(jj-1)+1,k) = bearing + beta*rand;
+            measurement_z_relative(2*(Num-1)*(i-1) + 2*jj,k) = range + 25*rand;
           end
       end
+      %% Generate Landmark measurement
+         [bearing,range] = ...
+          Landmark_measurement_generation(landmark,X_ground_truth(3*(i-1)+1:3*i,k));
+        % measurement noises should be added here
+          measurement_z_landmark(2*(i-1)+1,k) = bearing + beta*rand;
+          measurement_z_landmark(2*(i-1)+2,k) = range + 25*rand;
     end
   end
   
@@ -91,6 +102,8 @@ function [X_ground_truth,measurement_z,action_for_robots] = toy_problem_gen(delt
   plot(ground_truthROB1(1,:),ground_truthROB1(2,:),'b*','markersize',3);
   hold on
   plot(ground_truthROB2(1,:),ground_truthROB2(2,:),'rs','markersize',3);
+  hold on
+  plot(landmark(1),landmark(2),'gd','markersize',10);
   axis equal;
 end
 
@@ -117,10 +130,24 @@ end
 %% Relative Measurement Model
 % The following function generate relative bearing and range measurements
 % based on the eq.(11) and (12) in Agostino et al. 2005
-function [bearing,range] = measurement_generation(pos_i,pos_j)
+function [bearing,range] = relative_measurement_generation(pos_i,pos_j)
   delta_x = pos_j(1) - pos_i(1);
   delta_y = pos_j(2) - pos_i(2);
   bearing = wrapToPi(atan((-sin(pos_i(3))*delta_x+cos(pos_i(3))*delta_y)...
                          /( cos(pos_i(3))*delta_x+sin(pos_i(3))*delta_y)));
   range = sqrt(delta_x^2 + delta_y^2);
 end
+
+%% Landmark Measurement Model
+% The following function generates bearing and range measurements from
+% Landmark,and the equations come from HW5
+function [bearing,range] = Landmark_measurement_generation(landmark,pos)
+    landmark_x = landmark(1,1);
+    landmark_y = landmark(2,1);
+    bearing = ...
+        wrapToPi(atan2(landmark_y - pos(2), landmark_x - pos(1)) - pos(3));
+    range  = ...
+        sqrt((landmark_y - pos(2))^2 + (landmark_x - pos(1))^2);
+end
+
+
