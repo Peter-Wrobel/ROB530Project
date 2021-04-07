@@ -145,39 +145,54 @@ classdef EKF < handle
         end
         
          %% Complete correction function - landmark
-         function correction_landmark(obj, z)
-           
-           % Update all robots simutaniously with 1 reference landmark,
-           % Observations: bearing, range
-           z_hat = zeros(2*obj.Num, 1);
-           H = zeros(2*obj.Num, 3); % consider only one landmark
-           
+         function correction_landmark(obj, z, landmark)
+            % Allocate the storage for z_hat and Jacobian H
+             z_hat = zeros(2*obj.Num,1);
+             H_local = zeros(2*obj.Num,3*obj.Num);
+           % Loop through all robots
+             for i = 1 : obj.Num
+                % Compute the anticipated measurements  
+                z_hat(2*(i-1)+1 : 2*i,1) = ...
+                     obj.hfun_landmark(landmark(1),landmark(2),obj.mu_pred(3*(i-1)+1:3*i,1));
+                % Construct the Jacobian H
+                H_blcok = obj.Hfun(landmark(1),landmark(2),...
+                                obj.mu_pred(3*(i-1)+1:3*i,1),...
+                                z_hat(2*(i-1)+1 : 2*i,1));
+                H_local(2*(i-1)+1:2*i,3*(i-1)+1:3*i) = H_blcok;           
+             end
+             
+          % stack the measurement noise
+            Q_stack = zeros(2*obj.Num, 2*obj.Num);
             for i = 1 : obj.Num
-                landmark_x = z(2*(i-1)+1);
-                landmark_y = z(2*i);
-                z_hat(2*(i-1)+1: 2*i, 1) = obj.hfun_landmark(landmark_x, landmark_y, obj.mu_pred);
-
-                % Compute expected observation and Jacobian
-                H_i = obj.Hfun(landmark_x, landmark_y, obj.mu_pred, z_hat(2*(i-1)+1: 2*i, 1));
-
-                % Innovation / residual covariance
-                % update covariance for robot one-by-one
-                S_i = H_i*obj.Sigma_pred(3*(i-1)+1:3*i, 3*(i-1)+1:3*i)*H_i' + obj.Q;
-                % Kalman gain
-                K_i = obj.Sigma_pred(3*(i-1)+1:3*i, 3*(i-1)+1:3*i) * H_i' * S_i^-1;
-                K(3*(i-1)+1:3*i, :) = K_i;
-                
-                % Correction
-                diff_i = [...
-                        wrapToPi(z(2*(i-1)+1, 1) - z_hat(2*(i-1)+1, 1));
-                        z(2*i, 1) - z_hat(2*i, 1)];
+                Q_stack(2*(i-1)+1:2*i , 2*(i-1)+1:2*i) = obj.Q;
+            end
             
-                obj.mu(3*(i-1)+1:3*i, 1) = obj.mu_pred(3*(i-1)+1:3*i, 1) + K_i * diff_i;
-                obj.mu(3*i, 1) = wrapToPi(obj.mu(3*i, 1));
-                
-                U_i = eye(length(obj.mu(3*(i-1)+1:3*i, 1))) - K_i * H_i;
-                obj.Sigma(3*(i-1)+1:3*i, 3*(i-1)+1:3*i) = U_i * obj.Sigma_pred(3*(i-1)+1:3*i, 3*(i-1)+1:3*i) * U_i' + K_i * obj.Q * K_i';
-           end 
+          % innovation covariance
+            S = H_local * obj.Sigma_pred * H_local' + Q_stack;
+        
+          % compute innovation statistics                
+%             v = landmark - z_hat;
+            v = z - z_hat;
+          % Wrap the bearing to the range [0,+pi]
+            for i = 1 : obj.Num
+               v(2*(i-1)+1) = wrapToPi(v(2*(i-1)+1));
+            end
+            
+          % filter gain
+            K = obj.Sigma_pred * H_local' * (S \ eye(size(S)));
+            
+          % correct the predicted state statistics
+            obj.mu = obj.mu_pred + K * v;
+          % Wrap the angle to the range [0,+pi]
+            for i = 1 : obj.Num
+                obj.mu(3*i) = wrapToPi(obj.mu(3*i));
+            end
+            
+          % Joseph update form
+            i = eye(length(obj.mu));
+            obj.Sigma = (i - K * H_local) * obj.Sigma_pred * (i - K * H_local)' ...
+                    + K * Q_stack * K'; 
+
          end
          
          

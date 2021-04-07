@@ -1,44 +1,87 @@
-function [X_ground_truth,measurement_z,action_for_robots] = toy_problem_gen(deltaT,numSteps)
-
+function [X_ground_truth,landmark,measurement_z_landmark,measurement_z_relative, action_for_robots] ...
+                                         = toy_problem_gen(deltaT,numSteps,Num)
+%% seed
+  rng(1);                              
+                                     
 %% The following parameters will be supplied as inputs later
-
-  Num = 2; % number of robots
-% Motion noise (see HW5)
+  % Num = 2; % number of robots
+  SCALE_NOISE = 30000;
+  landmark = [-3 5]'; % position of landmarks
+  % Motion noise (see HW5)
   alphas = [0.00025 0.00005 ...
             0.0025 0.0005 ...
             0.0025 0.0005].^2; 
   beta = deg2rad(5);
   
-% Stipulate the inputs for robot1 (current version is noiseless)
+% Stipulate the inputs for robot1 (current version is noiseless) (-1, 0, 0)
   action_for_robot1 = (-1) .* ones(3,numSteps-1);
   action_for_robot1(2:3,:) = zeros(2,numSteps-1); 
-  noise_v = alphas(1).*action_for_robot1(1,:).^2 + alphas(2).*action_for_robot1(2,:).^2 ...
-            .* rand(1,numSteps-1);
-  noise_omega = alphas(3).*action_for_robot1(1,:).^2 + alphas(4).*action_for_robot1(2,:).^2 ...
-            .* rand(1,numSteps-1);
-  noise_gamma = alphas(5).*action_for_robot1(1,:).^2 + alphas(6).*action_for_robot1(2,:).^2 ...
-            .* rand(1,numSteps-1);
-  action_for_robot1(1,:) = action_for_robot1(1,:) + noise_v;
-  action_for_robot1(2,:) = action_for_robot1(2,:) + noise_omega;
-  action_for_robot1(3,:) = action_for_robot1(3,:) + noise_gamma;
+  noise_v = (alphas(1).*action_for_robot1(1,:).^2 + alphas(2).*action_for_robot1(2,:).^2) ...
+            .* get_random(1,numSteps-1);
+  noise_omega = (alphas(3).*action_for_robot1(1,:).^2 + alphas(4).*action_for_robot1(2,:).^2) ...
+            .* get_random(1,numSteps-1);
+  noise_gamma = (alphas(5).*action_for_robot1(1,:).^2 + alphas(6).*action_for_robot1(2,:).^2) ...
+            .* get_random(1,numSteps-1);
   
+  action_for_robot1_noiseless = action_for_robot1;  
   
-% Stipulate the inputs for robot2
+  action_for_robot1(1,:) = action_for_robot1(1,:) + SCALE_NOISE * noise_v;
+  action_for_robot1(2,:) = action_for_robot1(2,:) + SCALE_NOISE * noise_omega;
+  action_for_robot1(3,:) = action_for_robot1(3,:) + SCALE_NOISE * noise_gamma;
+  
+  action_for_robot1_noiseless(1,:) = action_for_robot1_noiseless(1,:) + noise_v;
+  action_for_robot1_noiseless(2,:) = action_for_robot1_noiseless(2,:) + noise_omega;
+  action_for_robot1_noiseless(3,:) = action_for_robot1_noiseless(3,:) + noise_gamma;
+  
+% Stipulate the inputs for robot2 (1, 0, 0)
   action_for_robot2 = ones(3,numSteps-1);
   action_for_robot2(2:3,:) = zeros(2,numSteps-1); 
-  noise_v = alphas(1).*action_for_robot2(1,:).^2 + alphas(2).*action_for_robot2(2,:).^2 ...
-            .* rand(1,numSteps-1);
-  noise_omega = alphas(3).*action_for_robot2(1,:).^2 + alphas(4).*action_for_robot2(2,:).^2 ...
-            .* rand(1,numSteps-1);
-  noise_gamma = alphas(5).*action_for_robot2(1,:).^2 + alphas(6).*action_for_robot2(2,:).^2 ...
-            .* rand(1,numSteps-1);
-  action_for_robot2(1,:) = action_for_robot2(1,:) + noise_v;
-  action_for_robot2(2,:) = action_for_robot2(2,:) + noise_omega;
-  action_for_robot2(3,:) = action_for_robot2(3,:) + noise_gamma; 
+  % action_for_robot2(2,:) = -0.05 .* ones(1,numSteps-1); 
+  noise_v = (alphas(1).*action_for_robot2(1,:).^2 + alphas(2).*action_for_robot2(2,:).^2) ...
+            .* get_random(1,numSteps-1);
+  noise_omega = (alphas(3).*action_for_robot2(1,:).^2 + alphas(4).*action_for_robot2(2,:).^2) ...
+            .* get_random(1,numSteps-1);
+  noise_gamma = (alphas(5).*action_for_robot2(1,:).^2 + alphas(6).*action_for_robot2(2,:).^2) ...
+            .* get_random(1,numSteps-1);
+        
+  action_for_robot2_noiseless = action_for_robot2;
   
+  action_for_robot2(1,:) = action_for_robot2(1,:) + SCALE_NOISE * noise_v;
+  action_for_robot2(2,:) = action_for_robot2(2,:) + SCALE_NOISE * noise_omega;
+  action_for_robot2(3,:) = action_for_robot2(3,:) + SCALE_NOISE * noise_gamma; 
+  
+  action_for_robot2_noiseless(1,:) = action_for_robot2_noiseless(1,:) + noise_v;
+  action_for_robot2_noiseless(2,:) = action_for_robot2_noiseless(2,:) + noise_omega;
+  action_for_robot2_noiseless(3,:) = action_for_robot2_noiseless(3,:) + noise_gamma;
+  
+% Stipulate the inputs for robot3 (0, 1, 0)
+  action_for_robot3 = zeros(3,numSteps-1);
+  action_for_robot3(1,:) = ones(1,numSteps-1); 
+  action_for_robot3(2,:) = -0.05 .* ones(1,numSteps-1); 
+  
+  action_for_robot3_noiseless = action_for_robot3;
+  
+  noise_v = (alphas(1).*action_for_robot3(1,:).^2 + alphas(2).*action_for_robot3(2,:).^2) ...
+            .* get_random(1,numSteps-1);
+  noise_omega = (alphas(3).*action_for_robot3(1,:).^2 + alphas(4).*action_for_robot3(2,:).^2) ...
+            .* get_random(1,numSteps-1);
+  noise_gamma = (alphas(5).*action_for_robot3(1,:).^2 + alphas(6).*action_for_robot3(2,:).^2) ...
+            .* get_random(1,numSteps-1);
+ 
+  action_for_robot3(1,:) = action_for_robot3(1,:) + SCALE_NOISE * noise_v;
+  action_for_robot3(2,:) = action_for_robot3(2,:) + SCALE_NOISE * noise_omega;
+  action_for_robot3(3,:) = action_for_robot3(3,:) + SCALE_NOISE * noise_gamma; 
+  
+  action_for_robot3_noiseless(1,:) = action_for_robot3_noiseless(1,:) + noise_v;
+  action_for_robot3_noiseless(2,:) = action_for_robot3_noiseless(2,:) + noise_omega;
+  action_for_robot3_noiseless(3,:) = action_for_robot3_noiseless(3,:) + noise_gamma;
+  
+  % organize
   action_for_robots = NaN .* ones(3*Num,numSteps-1);
-  action_for_robots(1:3,:) = action_for_robot1;
-  action_for_robots(4:6,:) = action_for_robot2;
+  action_for_robots(1:3,:) = action_for_robot1_noiseless;
+  action_for_robots(4:6,:) = action_for_robot2_noiseless;
+  action_for_robots(7:9,:) = action_for_robot3_noiseless;
+  
   
 %% Generate ground truth value and measurements    
 % Generate the ground truth pos of robot1
@@ -59,31 +102,51 @@ function [X_ground_truth,measurement_z,action_for_robots] = toy_problem_gen(delt
                movement(ground_truthROB2(:,i-1),action_for_robot2(:,i-1),deltaT);
   end  
 
+% Generate the ground truth pos of robot3
+  ground_truthROB3 = zeros(3,numSteps);
+% Initialize the postion of the robot2 at t = 0
+  ground_truthROB3(:,1) = [0 3.5 pi/2]'; 
+  for i = 2:numSteps
+      ground_truthROB3(:,i) = ...
+               movement(ground_truthROB3(:,i-1),action_for_robot3(:,i-1),deltaT);
+  end 
+  
 % Generate the ground truth pos X_ground_truth following the same structure
 % specified in Agostino et al. 2005
   X_ground_truth = NaN .* ones(3*Num,numSteps);
   X_ground_truth(1:3,:) = ground_truthROB1;
   X_ground_truth(4:6,:) = ground_truthROB2;
+  X_ground_truth(7:9,:) = ground_truthROB3;
   
 %% Current measurement function only works for two robots
 % Generate the measurement matrix z whose size is 2*Num*(Num-1) X stepsOrData-1
-  measurement_z = NaN .* zeros(2*Num*(Num-1),numSteps);
+% Assume that all robots are mutually observable
+  measurement_z_relative = NaN .* zeros(2*Num*(Num-1),numSteps);
+% Only the nearest landmark is considered in current problem 
+  measurement_z_landmark = NaN .* zeros(2*Num,numSteps);
   for k = 1 : numSteps
     for i = 1 : Num
-      jj = 0;
-      for j = 1 : Num
-         % jj is used to record to serial num of observation for the same
-         % robot i
-          if j ~= i
-            jj = jj + 1;  
-            [bearing,range] =...
-            measurement_generation(X_ground_truth(3*(i-1)+1:3*i,k),...
-                                   X_ground_truth(3*(j-1)+1:3*j,k));
-          % measurement noises should be taken into account here
-            measurement_z(2*(Num-1)*(i-1) + 2*(jj-1)+1,k) = bearing + beta*rand;
-            measurement_z(2*(Num-1)*(i-1) + 2*jj,k) = range + 25*rand;
-          end
-      end
+        %% Generate relative measurement  
+        jj = 0;
+        for j = 1 : Num
+            % jj is used to record to serial num of observation for the same
+            % robot i
+            if j ~= i
+                jj = jj + 1;  
+                [bearing,range] =...
+                    relative_measurement_generation(X_ground_truth(3*(i-1)+1:3*i,k),...
+                X_ground_truth(3*(j-1)+1:3*j,k));
+                % measurement noises should be taken into account here
+                measurement_z_relative(2*(Num-1)*(i-1) + 2*(jj-1)+1,k) = bearing + beta*get_random(1, 1);
+                measurement_z_relative(2*(Num-1)*(i-1) + 2*jj,k) = range + 25*get_random(1, 1);
+            end
+        end
+        %% Generate Landmark measurement
+        [bearing,range] = ...
+                Landmark_measurement_generation(landmark, X_ground_truth(3*(i-1)+1:3*i,k));
+        % measurement noises should be added here
+        measurement_z_landmark(2*(i-1)+1,k) = bearing + beta*get_random(1, 1);
+        measurement_z_landmark(2*(i-1)+2,k) = range + 25*get_random(1, 1);
     end
   end
   
@@ -91,6 +154,10 @@ function [X_ground_truth,measurement_z,action_for_robots] = toy_problem_gen(delt
   plot(ground_truthROB1(1,:),ground_truthROB1(2,:),'b*','markersize',3);
   hold on
   plot(ground_truthROB2(1,:),ground_truthROB2(2,:),'rs','markersize',3);
+  hold on
+  plot(ground_truthROB3(1,:),ground_truthROB3(2,:),'r+','markersize',3);
+  hold on
+  plot(landmark(1),landmark(2),'gd','markersize',10);
   axis equal;
 end
 
@@ -117,10 +184,27 @@ end
 %% Relative Measurement Model
 % The following function generate relative bearing and range measurements
 % based on the eq.(11) and (12) in Agostino et al. 2005
-function [bearing,range] = measurement_generation(pos_i,pos_j)
+function [bearing,range] = relative_measurement_generation(pos_i,pos_j)
   delta_x = pos_j(1) - pos_i(1);
   delta_y = pos_j(2) - pos_i(2);
   bearing = wrapToPi(atan((-sin(pos_i(3))*delta_x+cos(pos_i(3))*delta_y)...
                          /( cos(pos_i(3))*delta_x+sin(pos_i(3))*delta_y)));
   range = sqrt(delta_x^2 + delta_y^2);
 end
+
+%% Landmark Measurement Model
+% The following function generates bearing and range measurements from
+% Landmark,and the equations come from HW5
+function [bearing,range] = Landmark_measurement_generation(landmark,pos)
+    landmark_x = landmark(1,1);
+    landmark_y = landmark(2,1);
+    bearing = ...
+        wrapToPi(atan2(landmark_y - pos(2), landmark_x - pos(1)) - pos(3));
+    range  = ...
+        sqrt((landmark_y - pos(2))^2 + (landmark_x - pos(1))^2);
+end
+
+function rand_val = get_random(m,n)
+    rand_val = (-1).*ones(m,n) + 2.*rand(m,n);
+end
+
