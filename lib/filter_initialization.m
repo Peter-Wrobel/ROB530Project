@@ -21,7 +21,7 @@ switch filter_name
         init.mu = initialStateMean;
         init.Sigma = initialStateCov;
         init.Num = Num;
-        init.n = 10000;
+        init.n = 500;
         init.particles = zeros(3*Num, init.n);
         init.particle_weight = zeros(init.n, 1);
         L = chol(init.Sigma,'lower');

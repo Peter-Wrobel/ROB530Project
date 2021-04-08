@@ -1,8 +1,9 @@
-function [X_ground_truth,landmark,measurement_z_landmark,action_for_robots] ...
+function [X_ground_truth,landmark,measurement_z_landmark,...
+          measurement_z_relative,action_for_robots] ...
                                          = toy_problem_gen(deltaT,numSteps)
 
 %% The following parameters will be supplied as inputs later
-  Num = 2; % number of robots
+  Num = 3; % number of robots
   landmark = [0 5]'; % position of landmarks
   % Motion noise (see HW5)
   alphas = [0.00025 0.00005 ...
@@ -14,11 +15,12 @@ function [X_ground_truth,landmark,measurement_z_landmark,action_for_robots] ...
   action_for_robot1 = (-1) .* ones(3,numSteps-1);
   action_for_robot1(2:3,:) = zeros(2,numSteps-1); 
   noise_v = alphas(1).*action_for_robot1(1,:).^2 + alphas(2).*action_for_robot1(2,:).^2 ...
-            .* rand(1,numSteps-1);
+            .* randn(1,numSteps-1);
   noise_omega = alphas(3).*action_for_robot1(1,:).^2 + alphas(4).*action_for_robot1(2,:).^2 ...
-            .* rand(1,numSteps-1);
+            .* randn(1,numSteps-1);
   noise_gamma = alphas(5).*action_for_robot1(1,:).^2 + alphas(6).*action_for_robot1(2,:).^2 ...
-            .* rand(1,numSteps-1);
+            .* randn(1,numSteps-1);
+  action_for_robot1_noiseless = action_for_robot1;
   action_for_robot1(1,:) = action_for_robot1(1,:) + noise_v;
   action_for_robot1(2,:) = action_for_robot1(2,:) + noise_omega;
   action_for_robot1(3,:) = action_for_robot1(3,:) + noise_gamma;
@@ -28,18 +30,34 @@ function [X_ground_truth,landmark,measurement_z_landmark,action_for_robots] ...
   action_for_robot2 = ones(3,numSteps-1);
   action_for_robot2(2:3,:) = zeros(2,numSteps-1); 
   noise_v = alphas(1).*action_for_robot2(1,:).^2 + alphas(2).*action_for_robot2(2,:).^2 ...
-            .* rand(1,numSteps-1);
+            .* randn(1,numSteps-1);
   noise_omega = alphas(3).*action_for_robot2(1,:).^2 + alphas(4).*action_for_robot2(2,:).^2 ...
-            .* rand(1,numSteps-1);
+            .* randn(1,numSteps-1);
   noise_gamma = alphas(5).*action_for_robot2(1,:).^2 + alphas(6).*action_for_robot2(2,:).^2 ...
-            .* rand(1,numSteps-1);
+            .* randn(1,numSteps-1);
+  action_for_robot2_noiseless = action_for_robot2;
   action_for_robot2(1,:) = action_for_robot2(1,:) + noise_v;
   action_for_robot2(2,:) = action_for_robot2(2,:) + noise_omega;
   action_for_robot2(3,:) = action_for_robot2(3,:) + noise_gamma; 
+ 
+ % Stipulate the inputs for robot3
+  action_for_robot3 = ones(3,numSteps-1);
+  action_for_robot3(2:3,:) = zeros(2,numSteps-1); 
+  noise_v = alphas(1).*action_for_robot3(1,:).^2 + alphas(2).*action_for_robot3(2,:).^2 ...
+            .* randn(1,numSteps-1);
+  noise_omega = alphas(3).*action_for_robot3(1,:).^2 + alphas(4).*action_for_robot3(2,:).^2 ...
+            .* randn(1,numSteps-1);
+  noise_gamma = alphas(5).*action_for_robot3(1,:).^2 + alphas(6).*action_for_robot3(2,:).^2 ...
+            .* randn(1,numSteps-1);
+  action_for_robot3_noiseless = action_for_robot3;
+  action_for_robot3(1,:) = action_for_robot3(1,:) + noise_v;
+  action_for_robot3(2,:) = action_for_robot3(2,:) + noise_omega;
+  action_for_robot3(3,:) = action_for_robot3(3,:) + noise_gamma; 
   
   action_for_robots = NaN .* ones(3*Num,numSteps-1);
-  action_for_robots(1:3,:) = action_for_robot1;
-  action_for_robots(4:6,:) = action_for_robot2;
+  action_for_robots(1:3,:) = action_for_robot1_noiseless;
+  action_for_robots(4:6,:) = action_for_robot2_noiseless;
+  action_for_robots(7:9,:) = action_for_robot3_noiseless;
   
 %% Generate ground truth value and measurements    
 % Generate the ground truth pos of robot1
@@ -60,11 +78,21 @@ function [X_ground_truth,landmark,measurement_z_landmark,action_for_robots] ...
                movement(ground_truthROB2(:,i-1),action_for_robot2(:,i-1),deltaT);
   end  
 
+% Generate the ground truth pos of robot2
+  ground_truthROB3 = zeros(3,numSteps);
+% Initialize the postion of the robot2 at t = 0
+  ground_truthROB3(:,1) = [0 -3 pi/2]'; 
+  for i = 2:numSteps
+      ground_truthROB3(:,i) = ...
+               movement(ground_truthROB3(:,i-1),action_for_robot3(:,i-1),deltaT);
+  end    
+  
 % Generate the ground truth pos X_ground_truth following the same structure
 % specified in Agostino et al. 2005
   X_ground_truth = NaN .* ones(3*Num,numSteps);
   X_ground_truth(1:3,:) = ground_truthROB1;
   X_ground_truth(4:6,:) = ground_truthROB2;
+  X_ground_truth(7:9,:) = ground_truthROB3;
   
 %% Current measurement function only works for two robots
 % Generate the measurement matrix z whose size is 2*Num*(Num-1) X stepsOrData-1
@@ -85,16 +113,16 @@ function [X_ground_truth,landmark,measurement_z_landmark,action_for_robots] ...
             relative_measurement_generation(X_ground_truth(3*(i-1)+1:3*i,k),...
                                             X_ground_truth(3*(j-1)+1:3*j,k));
           % measurement noises should be taken into account here
-            measurement_z_relative(2*(Num-1)*(i-1) + 2*(jj-1)+1,k) = bearing + beta*rand;
-            measurement_z_relative(2*(Num-1)*(i-1) + 2*jj,k) = range + 25*rand;
+            measurement_z_relative(2*(Num-1)*(i-1) + 2*(jj-1)+1,k) = bearing + beta*randn;
+            measurement_z_relative(2*(Num-1)*(i-1) + 2*jj,k) = range + 25*randn;
           end
       end
       %% Generate Landmark measurement
          [bearing,range] = ...
           Landmark_measurement_generation(landmark,X_ground_truth(3*(i-1)+1:3*i,k));
         % measurement noises should be added here
-          measurement_z_landmark(2*(i-1)+1,k) = bearing + beta*rand;
-          measurement_z_landmark(2*(i-1)+2,k) = range + 25*rand;
+          measurement_z_landmark(2*(i-1)+1,k) = bearing + beta*randn;
+          measurement_z_landmark(2*(i-1)+2,k) = range + 25*randn;
     end
   end
   
@@ -102,6 +130,8 @@ function [X_ground_truth,landmark,measurement_z_landmark,action_for_robots] ...
   plot(ground_truthROB1(1,:),ground_truthROB1(2,:),'b*','markersize',3);
   hold on
   plot(ground_truthROB2(1,:),ground_truthROB2(2,:),'rs','markersize',3);
+  hold on
+  plot(ground_truthROB3(1,:),ground_truthROB3(2,:),'ks','markersize',3);
   hold on
   plot(landmark(1),landmark(2),'gd','markersize',10);
   axis equal;

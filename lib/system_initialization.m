@@ -4,11 +4,10 @@ function sys = system_initialization(alphas, beta, deltaT)
 sys.gfun = @(mu, u) [...
     mu(1) + (-u(1) / u(2) * sin(mu(3)) + u(1) / u(2) * sin(mu(3) + u(2)*deltaT));
     mu(2) + ( u(1) / u(2) * cos(mu(3)) - u(1) / u(2) * cos(mu(3) + u(2)*deltaT));
-    mu(3) + u(2) + u(3)*deltaT];
+    mu(3) + u(2)*deltaT + u(3)*deltaT];
 
 %% The following relative measurement model comes from Agostino
 %  And the measurement model involves landmark comes from HW5
-
 sys.hfun_landmark = @(landmark_x, landmark_y, mu_pred) [...
     wrapToPi(atan2(landmark_y - mu_pred(2), landmark_x - mu_pred(1)) - mu_pred(3));
     sqrt((landmark_y - mu_pred(2))^2 + (landmark_x - mu_pred(1))^2)];

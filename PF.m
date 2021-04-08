@@ -1,27 +1,29 @@
 classdef PF < handle
     properties
         gfun;               % Motion model function
-        hfun_relative;      % Measurement Model Function
-        Q;                  %Sensor Noise
-        M;                  %Motion Model Noise (dynamical and function of input)
-        n;                  %Number of Particles
-        particles;          %Pose of particle
-        particle_weight;    %Particle Weight
+        hfun_relative;      % Measurement Model Function (relative)
+        hfun_landmark;      % Measurement Model Function (landmark)
+        Q;                  % Sensor Noise
+        M;                  % Motion Model Noise (dynamical and function of input)
+        
+        n;                  % Number of Particles
+        particles;          % Pose of particle
+        particle_weight;    % Particle Weight
+        
         mu;
         Sigma;
         
         Num                 % Number of robots 
-        
-
-        
     end
     
     methods
         function obj = PF(sys, init)
             % motion model
             obj.gfun = sys.gfun;
-            % measurement model
+            % measurement model using relative measurement
             obj.hfun_relative = sys.hfun_relative;
+            % measurement model using landmark measurement
+            obj.hfun_landmark = sys.hfun_landmark;
             % motion noise covariance
             obj.M = sys.M;
             % measurement noise covariance
@@ -48,11 +50,11 @@ classdef PF < handle
             meanAndVariance(obj);
         end
         
-        %% Complete correction function
-        function correction(obj, z)
+        %% Complete correction function using realtive measurement
+        function correction_relative(obj, z)
            % Allocate the storage for z_hat,Q_stack and w;
             z_hat = zeros(2*obj.Num*(obj.Num-1),1);
-            Q_stack = zeros(2*obj.Num*(obj.Num-1),2*obj.Num*(obj.Num-1));
+            
             w = zeros(obj.n,1);
             
            % Loop through all pairs of robots
@@ -74,12 +76,13 @@ classdef PF < handle
              for i = 1 : obj.Num*(obj.Num - 1)
                  v(2*(i-1)+1) = wrapToPi(v(2*(i-1)+1));
              end
-           
+             
+             Q_stack = zeros(2*obj.Num*(obj.Num-1),2*obj.Num*(obj.Num-1));
              for i = 1 : obj.Num*(obj.Num-1)
                  Q_stack(2*(i-1)+1:2*i , 2*(i-1)+1:2*i) = obj.Q;
              end
 
-             w(i) = mvnpdf(v, 0, 0.5.*Q_stack);
+             w(p) = mvnpdf(v, 0, 1000.*Q_stack);
             
            end
             % update and normalize weights
@@ -87,13 +90,53 @@ classdef PF < handle
             obj.particle_weight = obj.particle_weight ./ sum(obj.particle_weight);
             % compute effective number of particles
             Neff = 1 / sum(obj.particle_weight.^2);
-            if Neff < obj.n/1.5
-                resample(obj);
+            if Neff < obj.n/(1.5)
+%                 resample(obj);
             end
             meanAndVariance(obj);
         end 
-
-               
+        
+     %% Complete correction function using realtive measurement
+      function correction_landmark(obj, z, landmark) 
+            weight = zeros(obj.n,1);
+            z_hat_local = NaN .* ones(2*obj.Num,1);
+            for j = 1:obj.n
+              % Compute the measurement
+                for i = 1 : obj.Num
+                   z_hat_i = ...
+                       obj.hfun_landmark(landmark(1),landmark(2),obj.particles(3*(i-1)+1:3*i,j));
+                   z_hat_local(2*(i-1)+1:2*i) = z_hat_i;
+                end
+                
+              % Compute the Innovation
+                v = z - z_hat_local;
+              % Wrap the bearing to [0 pi]
+                for k = 1 : obj.Num
+                    v(2*(k-1)+1) = wrapToPi(v(2*(k-1)+1));
+                end
+                 
+               % Get weight probability of difference in measurement
+                 Q_stack = zeros(2*obj.Num,2*obj.Num);
+                 for t = 1 : obj.Num
+                    Q_stack(2*(t-1)+1:2*t,2*(t-1)+1:2*t) = obj.Q;
+                 end
+                 
+                 weight(j) = mvnpdf(v, 0, 2.*Q_stack);
+            end
+            
+          % Update Weights
+            obj.particle_weight = obj.particle_weight .* weight;
+            obj.particle_weight = obj.particle_weight./sum(obj.particle_weight);
+            Neff = 1 / sum(obj.particle_weight.^2);
+            if Neff < obj.n /1.5
+%                 obj.resample();
+            end
+            obj.meanAndVariance();
+        end 
+     
+     
+     
+     %% Other Methods
         function resample(obj)
             newSamples = zeros(size(obj.particles));
             newWeight = zeros(size(obj.particle_weight));
