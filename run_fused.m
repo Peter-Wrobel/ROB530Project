@@ -1,5 +1,5 @@
 function run_fused(numSteps, filter_name, if_toy_prob)
-
+cla;
 %%   run_fused(stepsOrData, filter_name, if_toy_prob)
 %      stepsOrData - is the number of time steps
 %      filter_name - filter type, 'EKF' or 'PF'
@@ -9,7 +9,7 @@ function run_fused(numSteps, filter_name, if_toy_prob)
   addpath([cd, filesep, 'lib'])
   if if_toy_prob
    % Number of robots
-     Num = 2;
+     Num = 3;
    % Motion noise (in odometry space, see Table 5.5, p.134 in book).
    % variance of noise proportional to alphas
      alphas = [0.00025 0.00005 ...
@@ -19,7 +19,8 @@ function run_fused(numSteps, filter_name, if_toy_prob)
    % Standard deviation of Gaussian sensor noise (independent of distance)
      beta = deg2rad(5);
    % generate the data set for the toy problem
-     [X_ground_truth,measurement_z,action_for_robots] = toy_problem_gen(deltaT,numSteps);
+     % [X_ground_truth,measurement_z,action_for_robots] = toy_problem_gen(deltaT,numSteps);
+     [X_ground_truth,landmark,landmark_measurement_z,relative_measurement_z,action_for_robots] = toy_problem_gen(deltaT,numSteps, Num);
      
      initialStateMean = X_ground_truth(:,1);
      initialStateCov = eye(3*Num);
@@ -31,6 +32,7 @@ function run_fused(numSteps, filter_name, if_toy_prob)
   % Record the filtered positions of the robot group
   filtered_robot1 = NaN .* zeros(3,numSteps-1);
   filtered_robot2 = NaN .* zeros(3,numSteps-1);
+  filtered_robot3 = NaN .* zeros(3,numSteps-1);
 for t = 1 : numSteps-1
     %=================================================
     % data available to your filter at this time step
@@ -40,7 +42,9 @@ for t = 1 : numSteps-1
     motionCommand = action_for_robots(:,t); 
     % [relative bearing, relative range] (noisy observation)
     % 2*Num*(Num-1) * 1
-    observation = measurement_z(:,t+1);
+    
+    observation = relative_measurement_z(:,t+1);
+    landmark_measurement_z_t = landmark_measurement_z(:,t+1);
     
     %=================================================
     %TODO: update your filter here based upon the
@@ -50,12 +54,23 @@ for t = 1 : numSteps-1
       
     switch filter_name
         case {"EKF"}
-           filter.prediction(motionCommand);
-           filter.correction(observation);
-%            draw_ellipse(filter.mu(1:2), filter.Sigma(1:2,1:2),9)
+           filter.prediction(motionCommand); 
+%            filter.mu = filter.mu_pred;
+%            filter.Sigma = filter.Sigma_pred;
+
+           filter.correction_landmark(landmark_measurement_z_t, landmark);
+           
+           filter.mu_pred = filter.mu;
+           filter.Sigma_pred = filter.Sigma;
+           
+           filter.correction_relative(observation);
+           
+           % filter.correction_batch(landmark, observation);
+           % draw_ellipse(filter.mu(1:2), filter.Sigma(1:2,1:2),9)
     end
          filtered_robot1(:,t) = filter.mu(1:3,1);
          filtered_robot2(:,t) = filter.mu(4:6,1);
+         filtered_robot3(:,t) = filter.mu(7:9,1);
 end
 
 %% Visualization
@@ -63,14 +78,21 @@ end
   hold on
   p2 = plot(X_ground_truth(4,:),X_ground_truth(5,:),'bs','markersize',5);
   hold on
-  p3 = plot(filtered_robot1(1,:),filtered_robot1(2,:),'r*','markersize',5);
+  p3 = plot(X_ground_truth(7,:),X_ground_truth(8,:),'b+','markersize',5);
   hold on
-  p4 = plot(filtered_robot2(1,:),filtered_robot2(2,:),'rs','markersize',5);
+  p4 = plot(filtered_robot1(1,:),filtered_robot1(2,:),'r*','markersize',5);
+  hold on
+  p5 = plot(filtered_robot2(1,:),filtered_robot2(2,:),'rs','markersize',5);
+  hold on
+  p6 = plot(filtered_robot3(1,:),filtered_robot3(2,:),'r+','markersize',5);
   axis equal;
-  legend([p1,p2,p3,p4],...
-         {'Goundtruth for Robot1','Goundtruth for Robot2',...
-          'Estimation for Robot1','Estimation for Robot2'});
-  title('EKF with Relative Measurements Fused (Without Landmark for Now)')
+  legend([p1, p2, p3, p4, p5, p6],...
+         {'Goundtruth for Robot1','Goundtruth for Robot2','Goundtruth for Robot3',...
+          'Estimation for Robot1','Estimation for Robot2','Estimation for Robot3'});
+%   title('EKF with Relative Measurements Fused - Relative only')
+%   title('EKF with Relative Measurements Fused - Landmark only')
+%   title('EKF with Relative Measurements Fused - landmark relative')
+  title('EKF with Relative Measurements Fused - relative landmark')
 % Stop for debugging
   stop = 0;
 end

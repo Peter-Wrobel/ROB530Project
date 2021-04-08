@@ -4,7 +4,7 @@ function sys = system_initialization(alphas, beta, deltaT)
 sys.gfun = @(mu, u) [...
     mu(1) + (-u(1) / u(2) * sin(mu(3)) + u(1) / u(2) * sin(mu(3) + u(2)*deltaT));
     mu(2) + ( u(1) / u(2) * cos(mu(3)) - u(1) / u(2) * cos(mu(3) + u(2)*deltaT));
-    mu(3) + u(2) + u(3)*deltaT];
+    mu(3) + u(2)*deltaT + u(3)*deltaT];
 
 %% The following relative measurement model comes from Agostino
 %  And the measurement model involves landmark comes from HW5
@@ -14,8 +14,8 @@ sys.hfun_landmark = @(landmark_x, landmark_y, mu_pred) [...
     sqrt((landmark_y - mu_pred(2))^2 + (landmark_x - mu_pred(1))^2)];
 
 sys.hfun_relative = @(pos_i, pos_j) [...
-    wrapToPi(atan((-sin(pos_i(3))*(pos_j(1) - pos_i(1))+cos(pos_i(3))*(pos_j(2) - pos_i(2)))...
-                 /( cos(pos_i(3))*(pos_j(1) - pos_i(1))+sin(pos_i(3))*(pos_j(2) - pos_i(2)))));
+    wrapToPi(atan((-sin(pos_i(3))*(pos_j(1) - pos_i(1))+ cos(pos_i(3))*(pos_j(2) - pos_i(2)))...
+                 /( cos(pos_i(3))*(pos_j(1) - pos_i(1))+ sin(pos_i(3))*(pos_j(2) - pos_i(2)))));
     sqrt((pos_j(1) - pos_i(1))^2 + (pos_j(2) - pos_i(2))^2)];
 
 %% Motion noise

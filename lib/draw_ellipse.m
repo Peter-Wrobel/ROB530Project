@@ -33,13 +33,13 @@ function varargout = draw_ellipse(mu, Sigma, k2, varargin)
 Npoints = 20;
 if (nargin > 3)
   for ii=1:length(varargin) % check for 'Npoints', N pair option
-    if ischar(varargin{ii}) && strcmpi(varargin{ii},'npoints');
+    if ischar(varargin{ii}) && strcmpi(varargin{ii},'npoints')
       Npoints = varargin{ii+1};
       varargin = {varargin{1:ii-1},varargin{ii+2:end}};
-      break;
+      break
     end
   end
-end;
+end
     
 [x,y] = calculateEllipseXY(mu, Sigma, k2, Npoints);
 
