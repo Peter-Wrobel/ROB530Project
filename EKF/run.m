@@ -51,9 +51,6 @@ deltaT = 0.1;
 initialStateMean = [180 50 0]';
 initialStateCov = eye(3);
 
-% Identify the number of robots
-  Num = 2;
-  
 % Motion noise (in odometry space, see Table 5.5, p.134 in book).
 alphas = [0.00025 0.00005 0.0025 0.0005 0.0025 0.0005].^2; % variance of noise proportional to alphas
 
@@ -82,7 +79,7 @@ end
 results = zeros(7,numSteps);
 sys = system_initialization(alphas, beta);
 
-filter = filter_initialization(sys, initialStateMean, initialStateCov, filter_name,Num);
+filter = filter_initialization(sys, initialStateMean, initialStateCov, filter_name);
 
 for t = 1:numSteps
     %=================================================
@@ -148,24 +145,22 @@ for t = 1:numSteps
            filter.prediction(motionCommand);
            filter.correction(observation);
            draw_ellipse(filter.mu(1:2), filter.Sigma(1:2,1:2),9)
-%%           % Uncomment to run for bonus points
-%              results(:,t) = mahalanobis(filter,data(t,16:18),filter_name);
+           results(:,t) = mahalanobis(filter,data(t,16:18));
         case "PF"
             hp = plot(filter.particles(1,:), filter.particles(2,:),'.','Color', [[0.2980 .6 0], .25]);
             filter.prediction(motionCommand);
             filter.correction(observation);
             set(hp,'XData',filter.particles(1,:),'YData', filter.particles(2,:));
             draw_ellipse(filter.mu(1:2), filter.Sigma(1:2,1:2), 9)
-%%          % Uncomment to run for bonus points
-%             results(:,t) = mahalanobis(filter,data(t,16:18),filter_name);
+            results(:,t) = mahalanobis(filter,data(t,16:18));
         case "InEKF"
             filter.prediction(motionCommand)
             filter.correction(Y, Y2, observation(3), observation(6));
             ellipse_plotter(filter);
-          % Uncomment to run for bonus points
+            % Uncomment to run for bonus points
             lieTocartesian(filter);
-%%          % Uncomment to run for bonus points
-%            results(:,t) = mahalanobis(filter,data(t,16:18),filter_name);
+            %Uncomment to run for bonus points
+            results(:,t) = mahalanobis(filter,data(t,16:18));
     end
         
 
@@ -188,38 +183,36 @@ for t = 1:numSteps
     end
 end
 
-%% Uncomment to run for bonus points
-% figure; set(gca, 'fontsize', 14);
-% hold on; grid on
-% plot(results(1,:), 'linewidth', 2)
-% plot(7.81*ones(1,length(results)),'r', 'linewidth', 2)
-% legend('Chi-square Staistics','p = 0.05 in 3 DOF', 'fontsize', 14, 'location', 'best')
-% 
-% figure; set(gca, 'fontsize', 14)
-% subplot(3,1,1)
-% plot(results(2,:), 'linewidth', 2)
-% hold on; grid on
-% ylabel('X', 'fontsize', 14)
-% plot(results(5,:),'r', 'linewidth', 2)
-% plot(-1*results(5,:),'r', 'linewidth', 2)
-% legend('Deviation from Ground Truth','3rd Sigma Contour', 'fontsize', 14, 'location', 'best')
-% subplot(3,1,2)
-% plot(results(3,:), 'linewidth', 2)
-% hold on; grid on
-% plot(results(6,:),'r', 'linewidth', 2)
-% plot(-1*results(6,:),'r', 'linewidth', 2)
-% % plot(3*ones(1,length(results)),'r')
-% ylabel('Y', 'fontsize', 14)
-% subplot(3,1,3)
-% plot(results(4,:), 'linewidth', 2)
-% hold on; grid on
-% plot(results(7,:),'r', 'linewidth', 2)
-% plot(-1*results(7,:),'r', 'linewidth', 2)
-% % plot(3*ones(1,length(results)),'r')
-% ylabel('\theta', 'fontsize', 14)
-% xlabel('Iterations', 'fontsize', 14)
+figure; set(gca, 'fontsize', 14);
+hold on; grid on
+plot(results(1,:), 'linewidth', 2)
+plot(7.81*ones(1,length(results)),'r', 'linewidth', 2)
+legend('Chi-square Staistics','p = 0.05 in 3 DOF', 'fontsize', 14, 'location', 'best')
 
-%%
+figure; set(gca, 'fontsize', 14)
+subplot(3,1,1)
+plot(results(2,:), 'linewidth', 2)
+hold on; grid on
+ylabel('X', 'fontsize', 14)
+plot(results(5,:),'r', 'linewidth', 2)
+plot(-1*results(5,:),'r', 'linewidth', 2)
+legend('Deviation from Ground Truth','3rd Sigma Contour', 'fontsize', 14, 'location', 'best')
+subplot(3,1,2)
+plot(results(3,:), 'linewidth', 2)
+hold on; grid on
+plot(results(6,:),'r', 'linewidth', 2)
+plot(-1*results(6,:),'r', 'linewidth', 2)
+% plot(3*ones(1,length(results)),'r')
+ylabel('Y', 'fontsize', 14)
+subplot(3,1,3)
+plot(results(4,:), 'linewidth', 2)
+hold on; grid on
+plot(results(7,:),'r', 'linewidth', 2)
+plot(-1*results(7,:),'r', 'linewidth', 2)
+% plot(3*ones(1,length(results)),'r')
+ylabel('\theta', 'fontsize', 14)
+xlabel('Iterations', 'fontsize', 14)
+
 if nargout >= 1
     varargout{1} = data;
 end
