@@ -38,7 +38,7 @@ cla;
      beta = deg2rad(5);
    % generate the data set for the toy problem
      % [X_ground_truth,measurement_z,action_for_robots] = toy_problem_gen(deltaT,numSteps);
-     [X_ground_truth,landmark,landmark_measurement_z,relative_measurement_z,action_for_robots, numSteps] = real_problem_gen(deltaT, Num);
+     [X_ground_truth,landmark,landmark_measurement_z,relative_measurement_z,action_for_robots, numSteps] = toy_problem_gen(deltaT, Num);
      
      initialStateMean = X_ground_truth(:,1);
      initialStateCov = eye(3*Num);
@@ -74,19 +74,13 @@ for t = 1 : numSteps-1
     switch filter_name
         case {"EKF"}
            filter.prediction(motionCommand); 
-           
 %            filter.mu = filter.mu_pred;
 %            filter.Sigma = filter.Sigma_pred;
            if if_toy_prob
-              %filter.correction_landmark(landmark_measurement_z_t, landmark);
-              
+              filter.correction_landmark(landmark_measurement_z_t, landmark);
 
-           %elseif landmark_measurement_z_t %TODO MEASURMENT IS NOW 3*4, NOT 3*3
-                                            %BECAUSE NOW EACH ROBOT HAS
-                                            %LANDMARK ID PUSHED TOO. BE
-                                            %AWARE OF -1 LANDMARK ID
-              %landmark_measurement_z_t 
-              %filter.correction_landmark(landmark_measurement_z_t, landmark);
+           elseif landmark_measurement_z_t
+              filter.correction_landmark(landmark_measurement_z_t, landmark);
 
            end
            

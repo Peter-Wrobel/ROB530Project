@@ -19,7 +19,7 @@ classdef dataparse
           obj.dataset_num = val;
           obj.path_str = strcat("data/MRCLAM", int2str(obj.dataset_num), "/MRCLAM_Dataset",int2str(obj.dataset_num), "/");
           obj.SYNC_TIME_BEF = 1248272280;
-          obj.SYNC_TIME_AFT = 1248272380;  % No time readings after  this
+          obj.SYNC_TIME_AFT = 1248272680;  % No time readings after  this
           obj.TOTAL_TIME    = obj.SYNC_TIME_AFT - obj.SYNC_TIME_BEF;
           obj.Tdel = ts;
 
@@ -27,7 +27,7 @@ classdef dataparse
       end
       
       function times = time_length(obj)
-          times =  obj.TOTAL_TIME/obj.Tdel  +1;
+          times =  obj.TOTAL_TIME/obj.Tdel;
       end
       
       function barcode = parse_barcode(obj)
@@ -91,13 +91,6 @@ classdef dataparse
                 
             end
             
-            if have_mes == false
-                add = GT(index-1,:);
-                add(1,1) = ts;
-                GT = [GT(1:index-1,:); add; GT(index:end,:)];
-                index = index+1;
-            end
-            
         end
         
         
@@ -124,10 +117,8 @@ classdef dataparse
                 end
                 
             end
-            if have_mes == false
-                add = OD(index-1,:);
-                add(1,1) = ts;
-                OD = [OD(1:index-1,:); add; OD(index:end,:)];
+                        if have_mes == 0
+                MS = [MS(1:index-1,:); [ts,-1,-1, -1]; MS(index:end,:)];
                 index = index+1;
             end
             
@@ -150,7 +141,7 @@ classdef dataparse
                     
                     have_mes = true;
                     MS(index, 1) = ts;
-                    MS(index,2) = landmark_codes(MS(index,2))-5;
+                    MS(index,2) = landmark_codes(MS(index,2));
                     index = index+1;
                     
                 else
@@ -158,7 +149,7 @@ classdef dataparse
                 end
                 
             end
-            if have_mes == false
+            if have_mes == 0
                 MS = [MS(1:index-1,:); [ts,-1,-1, -1]; MS(index:end,:)];
                 index = index+1;
             end
@@ -181,7 +172,7 @@ classdef dataparse
 
           range = sqrt((x2-x1).^2 +(y2-y1).^2);
           range = range + normrnd(0,var,size(x2)); 
-          theta = wrapToPi(atan2((y2-y1),(x2-x1)));
+          theta = atan2((y2-y1),(x2-x1));
           
           reso = [theta, range];
           

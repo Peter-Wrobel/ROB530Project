@@ -1,13 +1,13 @@
-parseObj = dataparse;
+parseObj = dataparse(1);
 
 %Raw groundtruth data from dataset. Arranged [time, x pos, y pos, theta(unneccessary)]
-RB_1 = parseObj.parse_robot(1,1);
-RB_2 = parseObj.parse_robot(1,2);
+RB_1 = parseObj.parse_robot(3);
+RB_2 = parseObj.parse_robot(2);
 
 
 % Takes 100 points from robot 1 and robot 2
-rb_1 = RB_1(1:100:10000,:);
-rb_2 = RB_2(1:100:10000,:);
+rb_1 = RB_1(1:100:20000,:);
+rb_2 = RB_2(1:100:20000,:);
 
 
 

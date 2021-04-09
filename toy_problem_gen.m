@@ -13,9 +13,9 @@ function [X_ground_truth,landmark,measurement_z_landmark,measurement_z_relative,
             0.0025 0.0005].^2; 
   beta = deg2rad(5);
   
-% Stipulate the inputs for robot1 (current version is noiseless) (-1, 0, 0)
+% Stipulate the inputs for robot1 (current version is noiseless) (-1, -1, 0)
   action_for_robot1 = (-1) .* ones(3,numSteps-1);
-  action_for_robot1(2:3,:) = zeros(2,numSteps-1); 
+  action_for_robot1(3,:) = zeros(1,numSteps-1); 
   noise_v = (alphas(1).*action_for_robot1(1,:).^2 + alphas(2).*action_for_robot1(2,:).^2) ...
             .* get_random(1,numSteps-1);
   noise_omega = (alphas(3).*action_for_robot1(1,:).^2 + alphas(4).*action_for_robot1(2,:).^2) ...
@@ -33,9 +33,9 @@ function [X_ground_truth,landmark,measurement_z_landmark,measurement_z_relative,
   action_for_robot1_noiseless(2,:) = action_for_robot1_noiseless(2,:) + noise_omega;
   action_for_robot1_noiseless(3,:) = action_for_robot1_noiseless(3,:) + noise_gamma;
   
-% Stipulate the inputs for robot2 (1, 0, 0)
+% Stipulate the inputs for robot2 (1, 1, 0)
   action_for_robot2 = ones(3,numSteps-1);
-  action_for_robot2(2:3,:) = zeros(2,numSteps-1); 
+  action_for_robot2(3,:) = zeros(1,numSteps-1); 
   % action_for_robot2(2,:) = -0.05 .* ones(1,numSteps-1); 
   noise_v = (alphas(1).*action_for_robot2(1,:).^2 + alphas(2).*action_for_robot2(2,:).^2) ...
             .* get_random(1,numSteps-1);
@@ -54,10 +54,10 @@ function [X_ground_truth,landmark,measurement_z_landmark,measurement_z_relative,
   action_for_robot2_noiseless(2,:) = action_for_robot2_noiseless(2,:) + noise_omega;
   action_for_robot2_noiseless(3,:) = action_for_robot2_noiseless(3,:) + noise_gamma;
   
-% Stipulate the inputs for robot3 (0, 1, 0)
+% Stipulate the inputs for robot3 (1, 0.15, 0)
   action_for_robot3 = zeros(3,numSteps-1);
   action_for_robot3(1,:) = ones(1,numSteps-1); 
-  action_for_robot3(2,:) = -0.05 .* ones(1,numSteps-1); 
+  action_for_robot3(2,:) = -0.15 .* ones(1,numSteps-1); 
   
   action_for_robot3_noiseless = action_for_robot3;
   
