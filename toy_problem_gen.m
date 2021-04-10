@@ -5,7 +5,6 @@ function [X_ground_truth,landmark,measurement_z_landmark,measurement_z_relative,
                                      
 %% The following parameters will be supplied as inputs later
   % Num = 2; % number of robots
-  SCALE_NOISE = 300;
   landmark = [-3 5]'; % position of landmarks
   % Motion noise (see HW5)
   alphas = [0.00025 0.00005 ...
@@ -16,18 +15,18 @@ function [X_ground_truth,landmark,measurement_z_landmark,measurement_z_relative,
 % Stipulate the inputs for robot1 (current version is noiseless) (-1, -1, 0)
   action_for_robot1 = (-1) .* ones(3,numSteps-1);
   action_for_robot1(3,:) = zeros(1,numSteps-1); 
-  noise_v = sqrt((alphas(1).*action_for_robot1(1,:).^2 + alphas(2).*action_for_robot1(2,:).^2)) ...
+  noise_v = sqrt(alphas(1).*action_for_robot1(1,:).^2 + alphas(2).*action_for_robot1(2,:).^2) ...
             .* get_random(1,numSteps-1);
-  noise_omega = sqrt((alphas(3).*action_for_robot1(1,:).^2 + alphas(4).*action_for_robot1(2,:).^2) )...
+  noise_omega = sqrt(alphas(3).*action_for_robot1(1,:).^2 + alphas(4).*action_for_robot1(2,:).^2)...
             .* get_random(1,numSteps-1);
-  noise_gamma = sqrt((alphas(5).*action_for_robot1(1,:).^2 + alphas(6).*action_for_robot1(2,:).^2)) ...
+  noise_gamma = sqrt(alphas(5).*action_for_robot1(1,:).^2 + alphas(6).*action_for_robot1(2,:).^2) ...
             .* get_random(1,numSteps-1);
   
   action_for_robot1_noiseless = action_for_robot1;  
   
-  action_for_robot1(1,:) = action_for_robot1(1,:) + SCALE_NOISE * noise_v;
-  action_for_robot1(2,:) = action_for_robot1(2,:) + SCALE_NOISE * noise_omega;
-  action_for_robot1(3,:) = action_for_robot1(3,:) + SCALE_NOISE * noise_gamma;
+  action_for_robot1(1,:) = action_for_robot1(1,:) + noise_v;
+  action_for_robot1(2,:) = action_for_robot1(2,:) + noise_omega;
+  action_for_robot1(3,:) = action_for_robot1(3,:) + noise_gamma;
   
   action_for_robot1_noiseless(1,:) = action_for_robot1_noiseless(1,:) + noise_v;
   action_for_robot1_noiseless(2,:) = action_for_robot1_noiseless(2,:) + noise_omega;
@@ -39,18 +38,18 @@ function [X_ground_truth,landmark,measurement_z_landmark,measurement_z_relative,
   action_for_robot2(1,:) = 2* ones(1,numSteps-1); 
   
   % action_for_robot2(2,:) = -0.05 .* ones(1,numSteps-1); 
-  noise_v = (alphas(1).*action_for_robot2(1,:).^2 + alphas(2).*action_for_robot2(2,:).^2) ...
+  noise_v = sqrt(alphas(1).*action_for_robot2(1,:).^2 + alphas(2).*action_for_robot2(2,:).^2) ...
             .* get_random(1,numSteps-1);
-  noise_omega = (alphas(3).*action_for_robot2(1,:).^2 + alphas(4).*action_for_robot2(2,:).^2) ...
+  noise_omega = sqrt(alphas(3).*action_for_robot2(1,:).^2 + alphas(4).*action_for_robot2(2,:).^2) ...
             .* get_random(1,numSteps-1);
-  noise_gamma = (alphas(5).*action_for_robot2(1,:).^2 + alphas(6).*action_for_robot2(2,:).^2) ...
+  noise_gamma = sqrt(alphas(5).*action_for_robot2(1,:).^2 + alphas(6).*action_for_robot2(2,:).^2) ...
             .* get_random(1,numSteps-1);
         
   action_for_robot2_noiseless = action_for_robot2;
   
-  action_for_robot2(1,:) = action_for_robot2(1,:) + SCALE_NOISE * noise_v;
-  action_for_robot2(2,:) = action_for_robot2(2,:) + SCALE_NOISE * noise_omega;
-  action_for_robot2(3,:) = action_for_robot2(3,:) + SCALE_NOISE * noise_gamma; 
+  action_for_robot2(1,:) = action_for_robot2(1,:) + noise_v;
+  action_for_robot2(2,:) = action_for_robot2(2,:) + noise_omega;
+  action_for_robot2(3,:) = action_for_robot2(3,:) + noise_gamma; 
   
   action_for_robot2_noiseless(1,:) = action_for_robot2_noiseless(1,:) + noise_v;
   action_for_robot2_noiseless(2,:) = action_for_robot2_noiseless(2,:) + noise_omega;
@@ -63,16 +62,16 @@ function [X_ground_truth,landmark,measurement_z_landmark,measurement_z_relative,
   
   action_for_robot3_noiseless = action_for_robot3;
   
-  noise_v = (alphas(1).*action_for_robot3(1,:).^2 + alphas(2).*action_for_robot3(2,:).^2) ...
+  noise_v = sqrt(alphas(1).*action_for_robot3(1,:).^2 + alphas(2).*action_for_robot3(2,:).^2) ...
             .* get_random(1,numSteps-1);
-  noise_omega = (alphas(3).*action_for_robot3(1,:).^2 + alphas(4).*action_for_robot3(2,:).^2) ...
+  noise_omega = sqrt(alphas(3).*action_for_robot3(1,:).^2 + alphas(4).*action_for_robot3(2,:).^2) ...
             .* get_random(1,numSteps-1);
-  noise_gamma = (alphas(5).*action_for_robot3(1,:).^2 + alphas(6).*action_for_robot3(2,:).^2) ...
+  noise_gamma = sqrt(alphas(5).*action_for_robot3(1,:).^2 + alphas(6).*action_for_robot3(2,:).^2) ...
             .* get_random(1,numSteps-1);
  
-  action_for_robot3(1,:) = action_for_robot3(1,:) + SCALE_NOISE * noise_v;
-  action_for_robot3(2,:) = action_for_robot3(2,:) + SCALE_NOISE * noise_omega;
-  action_for_robot3(3,:) = action_for_robot3(3,:) + SCALE_NOISE * noise_gamma; 
+  action_for_robot3(1,:) = action_for_robot3(1,:) + noise_v;
+  action_for_robot3(2,:) = action_for_robot3(2,:) + noise_omega;
+  action_for_robot3(3,:) = action_for_robot3(3,:) + noise_gamma; 
   
   action_for_robot3_noiseless(1,:) = action_for_robot3_noiseless(1,:) + noise_v;
   action_for_robot3_noiseless(2,:) = action_for_robot3_noiseless(2,:) + noise_omega;
