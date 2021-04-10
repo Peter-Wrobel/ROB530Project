@@ -1,13 +1,14 @@
-parseObj = dataparse(1);
+parseObj = dataparse(1, 1);
 
 %Raw groundtruth data from dataset. Arranged [time, x pos, y pos, theta(unneccessary)]
-RB_1 = parseObj.parse_robot(3);
-RB_2 = parseObj.parse_robot(2);
+M = containers.Map()
+RB_1 = parseObj.parse_robot(3,M);
+RB_2 = parseObj.parse_robot(2,M);
 
 
 % Takes 100 points from robot 1 and robot 2
-rb_1 = RB_1(1:100:20000,:);
-rb_2 = RB_2(1:100:20000,:);
+rb_1 = RB_1(1:100,:);
+rb_2 = RB_2(1:100,:);
 
 
 

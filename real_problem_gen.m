@@ -21,13 +21,13 @@ function [X_ground_truth,landmark,measurement_z_landmark,measurement_z_relative,
     action_for_robots    = 3*Num by TIME matrix. Every three rows  are the
                            [v;w; gamma] measurements at given time
 
-
 %}
                                                                                
 % Constant, object declerations    
-DATASET = 1;
+DATASET = 3;
 TIME_STEP = t_step;                            %determines what time interval beween measurements for example, TIME_STEP = 0.5 gives 0, 0.5, 1, 1.5, ...
-parseObj = dataparse(DATASET, TIME_STEP);
+NUM_SEC   = 100;
+parseObj = dataparse(DATASET, TIME_STEP, NUM_SEC);
 
 % Landmark data
 landmark = parseObj.parse_landmark();

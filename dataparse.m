@@ -15,11 +15,19 @@ classdef dataparse
    
    methods
        
-      function obj = dataparse(val, ts)
+      function obj = dataparse(val, ts, num_sec)
           obj.dataset_num = val;
           obj.path_str = strcat("data/MRCLAM", int2str(obj.dataset_num), "/MRCLAM_Dataset",int2str(obj.dataset_num), "/");
-          obj.SYNC_TIME_BEF = 1248272280;
-          obj.SYNC_TIME_AFT = 1248272380;  % No time readings after  this
+          
+          if val == 2
+            obj.SYNC_TIME_BEF = 1248275433;
+          elseif val == 3
+            obj.SYNC_TIME_BEF = 1248294066;
+          else
+            obj.SYNC_TIME_BEF = 1248272280;
+          end
+          
+          obj.SYNC_TIME_AFT = obj.SYNC_TIME_BEF + num_sec;
           obj.TOTAL_TIME    = obj.SYNC_TIME_AFT - obj.SYNC_TIME_BEF;
           obj.Tdel = ts;
 

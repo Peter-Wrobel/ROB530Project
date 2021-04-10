@@ -5,7 +5,7 @@ function [X_ground_truth,landmark,measurement_z_landmark,measurement_z_relative,
                                      
 %% The following parameters will be supplied as inputs later
   % Num = 2; % number of robots
-  SCALE_NOISE = 30000;
+  SCALE_NOISE = 300;
   landmark = [-3 5]'; % position of landmarks
   % Motion noise (see HW5)
   alphas = [0.00025 0.00005 ...
@@ -16,11 +16,11 @@ function [X_ground_truth,landmark,measurement_z_landmark,measurement_z_relative,
 % Stipulate the inputs for robot1 (current version is noiseless) (-1, -1, 0)
   action_for_robot1 = (-1) .* ones(3,numSteps-1);
   action_for_robot1(3,:) = zeros(1,numSteps-1); 
-  noise_v = (alphas(1).*action_for_robot1(1,:).^2 + alphas(2).*action_for_robot1(2,:).^2) ...
+  noise_v = sqrt((alphas(1).*action_for_robot1(1,:).^2 + alphas(2).*action_for_robot1(2,:).^2)) ...
             .* get_random(1,numSteps-1);
-  noise_omega = (alphas(3).*action_for_robot1(1,:).^2 + alphas(4).*action_for_robot1(2,:).^2) ...
+  noise_omega = sqrt((alphas(3).*action_for_robot1(1,:).^2 + alphas(4).*action_for_robot1(2,:).^2) )...
             .* get_random(1,numSteps-1);
-  noise_gamma = (alphas(5).*action_for_robot1(1,:).^2 + alphas(6).*action_for_robot1(2,:).^2) ...
+  noise_gamma = sqrt((alphas(5).*action_for_robot1(1,:).^2 + alphas(6).*action_for_robot1(2,:).^2)) ...
             .* get_random(1,numSteps-1);
   
   action_for_robot1_noiseless = action_for_robot1;  
@@ -34,8 +34,10 @@ function [X_ground_truth,landmark,measurement_z_landmark,measurement_z_relative,
   action_for_robot1_noiseless(3,:) = action_for_robot1_noiseless(3,:) + noise_gamma;
   
 % Stipulate the inputs for robot2 (1, 1, 0)
-  action_for_robot2 = ones(3,numSteps-1);
-  action_for_robot2(3,:) = zeros(1,numSteps-1); 
+  action_for_robot2 = zeros(3,numSteps-1);
+  action_for_robot2(2,:) = -3* ones(1,numSteps-1); 
+  action_for_robot2(1,:) = 2* ones(1,numSteps-1); 
+  
   % action_for_robot2(2,:) = -0.05 .* ones(1,numSteps-1); 
   noise_v = (alphas(1).*action_for_robot2(1,:).^2 + alphas(2).*action_for_robot2(2,:).^2) ...
             .* get_random(1,numSteps-1);

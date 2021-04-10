@@ -27,7 +27,7 @@ cla;
      
   else
    % Number of robots
-     Num = 3;
+     Num = 5;
    % Motion noise (in odometry space, see Table 5.5, p.134 in book).
    % variance of noise proportional to alphas
      alphas = [0.00025 0.00005 ...
@@ -73,10 +73,11 @@ for t = 1 : numSteps-1
       
     switch filter_name
         case {"EKF"}
+           motionCommand = motionCommand + 0.00001.*randn(size(motionCommand));
            filter.prediction(motionCommand); 
            
-%            filter.mu = filter.mu_pred;
-%            filter.Sigma = filter.Sigma_pred;
+            filter.mu = filter.mu_pred;
+            filter.Sigma = filter.Sigma_pred;
            if if_toy_prob
               %filter.correction_landmark(landmark_measurement_z_t, landmark);
               
@@ -90,13 +91,11 @@ for t = 1 : numSteps-1
 
            end
            
-              
-               
+            
+           %filter.mu_pred = filter.mu;
+           %filter.Sigma_pred = filter.Sigma;
            
-           filter.mu_pred = filter.mu;
-           filter.Sigma_pred = filter.Sigma;
-           
-           filter.correction_relative(observation);
+           %filter.correction_relative(observation);
            
            %filter.correction_batch(landmark, observation);
            %draw_ellipse(filter.mu(1:2), filter.Sigma(1:2,1:2),9)
