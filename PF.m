@@ -39,98 +39,76 @@ classdef PF < handle
         
         %% Complete prediction function
         function prediction(obj, u)
+            L = chol(obj.M(u), 'lower');
           % Sample from motion model
             for i = 1 : obj.n    
-                for k = 1 : obj.Num
-                 L = chol(obj.M(u(3*(k-1)+1:3*k,1)), 'lower');   
-                 obj.particles(3*(k-1)+1:3*k,i) = ...
-                    obj.gfun(obj.particles(3*(k-1)+1:3*k,i),u(3*(k-1)+1:3*k,1)+L*randn(3,1));
-                end
+                obj.particles(:,i) = obj.gfun(obj.particles(:,i),u+ L * randn(3,1)) ;
             end
-            meanAndVariance(obj);
+            obj.meanAndVariance();
         end
         
         %% Complete correction function using realtive measurement
-        function correction_relative(obj, z)
-           % Allocate the storage for z_hat,Q_stack and w;
-            z_hat = zeros(2*obj.Num*(obj.Num-1),1);
-            
+        function correction_relative(obj, z, relative_pos, Number)
+          % Allocate the storage for z_hat;
+            z_hat = zeros(2*(Number-1),1);
+          % Initialize the weights  
             w = zeros(obj.n,1);
-            
-           % Loop through all pairs of robots
-           for p = 1 : obj.n
-             for i = 1 : obj.Num
-                 jj = 0;
-                 for j = 1 : obj.Num
-                   if i ~= j
-                     jj = jj + 1;
+          % Loop through all pairs of robots
+            for p = 1 : obj.n
+              for j = 1 : Number - 1
                    % Compute the anticipated measurements  
-                     z_hat(2*(obj.Num-1)*(i-1)+2*(jj-1)+1:2*(obj.Num-1)*(i-1)+2*jj,1) = ...
-                         obj.hfun_relative(obj.particles(3*(i-1)+1:3*i,p),obj.particles(3*(j-1)+1:3*j,p));            
-                   end
-                 end
-             end
-            
-             v = z - z_hat; 
-           % Wrap the bearing to the range [0,+pi]
-             for i = 1 : obj.Num*(obj.Num - 1)
-                 v(2*(i-1)+1) = wrapToPi(v(2*(i-1)+1));
-             end
+                     z_hat(2*(j-1)+1:2*j,1) = ...
+                         obj.hfun_relative(obj.particles(:,p),relative_pos(3*(j-1)+1:3*j,1));
+              end
+              
+              v = z - z_hat;
+            % Wrap the bearing to the range [-pi,+pi]
+              for i = 1 : Number - 1
+                  v(2*(i-1)+1) = wrapToPi(v(2*(i-1)+1));
+              end
              
-             Q_stack = zeros(2*obj.Num*(obj.Num-1),2*obj.Num*(obj.Num-1));
-             for i = 1 : obj.Num*(obj.Num-1)
-                 Q_stack(2*(i-1)+1:2*i , 2*(i-1)+1:2*i) = obj.Q;
-             end
+              Q_stack = zeros(2*(Number-1),2*(Number-1));
+              for i = 1 : Number-1
+                  Q_stack(2*(i-1)+1:2*i , 2*(i-1)+1:2*i) = obj.Q;
+              end
 
-             w(p) = mvnpdf(v, 0, 1000.*Q_stack);
-            
+              w(p) = mvnpdf(v, 0, 2.*Q_stack);
            end
+            
+           
             % update and normalize weights
             obj.particle_weight = obj.particle_weight .* w; % since we used motion model to sample
             obj.particle_weight = obj.particle_weight ./ sum(obj.particle_weight);
-            % compute effective number of particles
-            Neff = 1 / sum(obj.particle_weight.^2);
-            if Neff < obj.n/(1.5)
-%                 resample(obj);
-            end
+            
+            % resampling every time step
+              resample(obj);
+              
             meanAndVariance(obj);
         end 
         
      %% Complete correction function using realtive measurement
       function correction_landmark(obj, z, landmark) 
             weight = zeros(obj.n,1);
-            z_hat_local = NaN .* ones(2*obj.Num,1);
             for j = 1:obj.n
               % Compute the measurement
-                for i = 1 : obj.Num
-                   z_hat_i = ...
-                       obj.hfun_landmark(landmark(1),landmark(2),obj.particles(3*(i-1)+1:3*i,j));
-                   z_hat_local(2*(i-1)+1:2*i) = z_hat_i;
-                end
-                
+                z_hat_local = ...
+                     obj.hfun_landmark(landmark(1),landmark(2),obj.particles(:,j));
+           
               % Compute the Innovation
                 v = z - z_hat_local;
               % Wrap the bearing to [0 pi]
-                for k = 1 : obj.Num
-                    v(2*(k-1)+1) = wrapToPi(v(2*(k-1)+1));
-                end
+                v(1) = wrapToPi(v(1));
                  
                % Get weight probability of difference in measurement
-                 Q_stack = zeros(2*obj.Num,2*obj.Num);
-                 for t = 1 : obj.Num
-                    Q_stack(2*(t-1)+1:2*t,2*(t-1)+1:2*t) = obj.Q;
-                 end
-                 
-                 weight(j) = mvnpdf(v, 0, 2.*Q_stack);
+                 weight(j) = mvnpdf(v, 0, 2.*obj.Q);
             end
             
           % Update Weights
             obj.particle_weight = obj.particle_weight .* weight;
             obj.particle_weight = obj.particle_weight./sum(obj.particle_weight);
-            Neff = 1 / sum(obj.particle_weight.^2);
-            if Neff < obj.n /1.5
-%                 obj.resample();
-            end
+            
+          % resampling every time step
+            obj.resample();     
             obj.meanAndVariance();
         end 
      
