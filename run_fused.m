@@ -15,7 +15,7 @@ cla;
      alphas = [0.00025 0.00005 ...
                0.0025 0.0005 ...
                0.0025 0.0005].^2;   
-     deltaT = 0.1;
+     deltaT = 1;
    % Standard deviation of Gaussian sensor noise (independent of distance)
      beta = deg2rad(5);
    % generate the data set for the toy problem
@@ -65,6 +65,8 @@ for t = 1 : numSteps-1
     observation = relative_measurement_z(:,t+1);
     landmark_measurement_z_t = landmark_measurement_z(:,t+1);
     
+    X_ground_truth_t = X_ground_truth(:, t+1);
+    
     %=================================================
     %TODO: update your filter here based upon the
     %      motionCommand and observation
@@ -73,14 +75,15 @@ for t = 1 : numSteps-1
       
     switch filter_name
         case {"EKF"}
-           motionCommand = motionCommand + 0.00001.*randn(size(motionCommand));
-           filter.prediction(motionCommand); 
            
-            filter.mu = filter.mu_pred;
-            filter.Sigma = filter.Sigma_pred;
-           if if_toy_prob
-              %filter.correction_landmark(landmark_measurement_z_t, landmark);
-              
+            % Avoid zero division
+            motionCommand = motionCommand + 0.00001.*randn(size(motionCommand));
+           
+            filter.prediction(motionCommand); 
+            
+            if if_toy_prob
+                filter.correction_landmark(landmark_measurement_z_t, landmark);
+
 
            %elseif landmark_measurement_z_t %TODO MEASURMENT IS NOW 3*4, NOT 3*3
                                             %BECAUSE NOW EACH ROBOT HAS
@@ -90,14 +93,11 @@ for t = 1 : numSteps-1
               %filter.correction_landmark(landmark_measurement_z_t, landmark);
 
            end
+
+           filter.mu_pred = filter.mu;
+           filter.Sigma_pred = filter.Sigma;
+           filter.correction_relative(observation);
            
-            
-           %filter.mu_pred = filter.mu;
-           %filter.Sigma_pred = filter.Sigma;
-           
-           %filter.correction_relative(observation);
-           
-           %filter.correction_batch(landmark, observation);
            %draw_ellipse(filter.mu(1:2), filter.Sigma(1:2,1:2),9)
     end
          filtered_robot1(:,t) = filter.mu(1:3,1);
@@ -124,7 +124,8 @@ end
 %   title('EKF with Relative Measurements Fused - Relative only')
 %   title('EKF with Relative Measurements Fused - Landmark only')
 %   title('EKF with Relative Measurements Fused - landmark relative')
-  title('EKF with Relative Measurements Fused - relative landmark')
+%   title('EKF with Relative Measurements Fused - relative landmark')
+%  title('EKF with Relative Measurements Fused - Landmark correction no noise groundtruth as prediction')
 % Stop for debugging
   stop = 0;
 end

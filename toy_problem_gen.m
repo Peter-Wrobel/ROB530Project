@@ -1,11 +1,11 @@
 function [X_ground_truth,landmark,measurement_z_landmark,measurement_z_relative, action_for_robots] ...
                                          = toy_problem_gen(deltaT,numSteps,Num)
 %% seed
-  rng(1);                              
+  rng(6); 
                                      
 %% The following parameters will be supplied as inputs later
   % Num = 2; % number of robots
-  landmark = [-3 5]'; % position of landmarks
+  landmark = [13 18]'; % position of landmarks
   % Motion noise (see HW5)
   alphas = [0.00025 0.00005 ...
             0.0025 0.0005 ...
@@ -13,14 +13,17 @@ function [X_ground_truth,landmark,measurement_z_landmark,measurement_z_relative,
   beta = deg2rad(5);
   
 % Stipulate the inputs for robot1 (current version is noiseless) (-1, -1, 0)
-  action_for_robot1 = (-1) .* ones(3,numSteps-1);
+  action_for_robot1 = zeros(3,numSteps-1);
+  action_for_robot1(1,:) = (-1) * ones(1,numSteps-1);
+  action_for_robot2(1,:) = 0.1 * ones(1,numSteps-1);
   action_for_robot1(3,:) = zeros(1,numSteps-1); 
+  
   noise_v = sqrt(alphas(1).*action_for_robot1(1,:).^2 + alphas(2).*action_for_robot1(2,:).^2) ...
-            .* get_random(1,numSteps-1);
+            .* randn(1,numSteps-1);
   noise_omega = sqrt(alphas(3).*action_for_robot1(1,:).^2 + alphas(4).*action_for_robot1(2,:).^2)...
-            .* get_random(1,numSteps-1);
+            .* randn(1,numSteps-1);
   noise_gamma = sqrt(alphas(5).*action_for_robot1(1,:).^2 + alphas(6).*action_for_robot1(2,:).^2) ...
-            .* get_random(1,numSteps-1);
+            .* randn(1,numSteps-1);
   
   action_for_robot1_noiseless = action_for_robot1;  
   
@@ -34,16 +37,16 @@ function [X_ground_truth,landmark,measurement_z_landmark,measurement_z_relative,
   
 % Stipulate the inputs for robot2 (1, 1, 0)
   action_for_robot2 = zeros(3,numSteps-1);
-  action_for_robot2(2,:) = -3* ones(1,numSteps-1); 
-  action_for_robot2(1,:) = 2* ones(1,numSteps-1); 
+  action_for_robot2(1,:) = 2 * ones(1,numSteps-1); 
+  action_for_robot2(2,:) = -0.5 * ones(1,numSteps-1); 
   
-  % action_for_robot2(2,:) = -0.05 .* ones(1,numSteps-1); 
+  
   noise_v = sqrt(alphas(1).*action_for_robot2(1,:).^2 + alphas(2).*action_for_robot2(2,:).^2) ...
-            .* get_random(1,numSteps-1);
+            .* randn(1,numSteps-1);
   noise_omega = sqrt(alphas(3).*action_for_robot2(1,:).^2 + alphas(4).*action_for_robot2(2,:).^2) ...
-            .* get_random(1,numSteps-1);
+            .* randn(1,numSteps-1);
   noise_gamma = sqrt(alphas(5).*action_for_robot2(1,:).^2 + alphas(6).*action_for_robot2(2,:).^2) ...
-            .* get_random(1,numSteps-1);
+            .* randn(1,numSteps-1);
         
   action_for_robot2_noiseless = action_for_robot2;
   
@@ -58,16 +61,16 @@ function [X_ground_truth,landmark,measurement_z_landmark,measurement_z_relative,
 % Stipulate the inputs for robot3 (1, 0.15, 0)
   action_for_robot3 = zeros(3,numSteps-1);
   action_for_robot3(1,:) = ones(1,numSteps-1); 
-  action_for_robot3(2,:) = -0.15 .* ones(1,numSteps-1); 
+  action_for_robot3(2,:) = 0.3 .* ones(1,numSteps-1); 
   
   action_for_robot3_noiseless = action_for_robot3;
   
   noise_v = sqrt(alphas(1).*action_for_robot3(1,:).^2 + alphas(2).*action_for_robot3(2,:).^2) ...
-            .* get_random(1,numSteps-1);
+            .* randn(1,numSteps-1);
   noise_omega = sqrt(alphas(3).*action_for_robot3(1,:).^2 + alphas(4).*action_for_robot3(2,:).^2) ...
-            .* get_random(1,numSteps-1);
+            .* randn(1,numSteps-1);
   noise_gamma = sqrt(alphas(5).*action_for_robot3(1,:).^2 + alphas(6).*action_for_robot3(2,:).^2) ...
-            .* get_random(1,numSteps-1);
+            .* randn(1,numSteps-1);
  
   action_for_robot3(1,:) = action_for_robot3(1,:) + noise_v;
   action_for_robot3(2,:) = action_for_robot3(2,:) + noise_omega;
@@ -138,28 +141,28 @@ function [X_ground_truth,landmark,measurement_z_landmark,measurement_z_relative,
                     relative_measurement_generation(X_ground_truth(3*(i-1)+1:3*i,k),...
                 X_ground_truth(3*(j-1)+1:3*j,k));
                 % measurement noises should be taken into account here
-                measurement_z_relative(2*(Num-1)*(i-1) + 2*(jj-1)+1,k) = bearing + beta*get_random(1, 1);
-                measurement_z_relative(2*(Num-1)*(i-1) + 2*jj,k) = range + 25*get_random(1, 1);
+                measurement_z_relative(2*(Num-1)*(i-1) + 2*(jj-1)+1,k) = bearing + beta*randn(1, 1);
+                measurement_z_relative(2*(Num-1)*(i-1) + 2*jj,k) = range + 25*randn(1, 1);
             end
         end
         %% Generate Landmark measurement
         [bearing,range] = ...
                 Landmark_measurement_generation(landmark, X_ground_truth(3*(i-1)+1:3*i,k));
         % measurement noises should be added here
-        measurement_z_landmark(2*(i-1)+1,k) = bearing + beta*get_random(1, 1);
-        measurement_z_landmark(2*(i-1)+2,k) = range + 25*get_random(1, 1);
+        measurement_z_landmark(2*(i-1)+1,k) = bearing + beta*randn(1, 1);
+        measurement_z_landmark(2*(i-1)+2,k) = range + 25*randn(1, 1);
     end
   end
   
-%% Viusalize the trajectory of the group of robots
-  plot(ground_truthROB1(1,:),ground_truthROB1(2,:),'b*','markersize',3);
-  hold on
-  plot(ground_truthROB2(1,:),ground_truthROB2(2,:),'rs','markersize',3);
-  hold on
-  plot(ground_truthROB3(1,:),ground_truthROB3(2,:),'r+','markersize',3);
-  hold on
-  plot(landmark(1),landmark(2),'gd','markersize',10);
-  axis equal;
+% %% Viusalize the trajectory of the group of robots
+%   plot(ground_truthROB1(1,:),ground_truthROB1(2,:),'b*','markersize',3);
+%   hold on
+%   plot(ground_truthROB2(1,:),ground_truthROB2(2,:),'rs','markersize',3);
+%   hold on
+%   plot(ground_truthROB3(1,:),ground_truthROB3(2,:),'r+','markersize',3);
+%   hold on
+%   plot(landmark(1),landmark(2),'gd','markersize',10);
+%   axis equal;
 end
 
 %% Motion of Robot
@@ -203,9 +206,5 @@ function [bearing,range] = Landmark_measurement_generation(landmark,pos)
         wrapToPi(atan2(landmark_y - pos(2), landmark_x - pos(1)) - pos(3));
     range  = ...
         sqrt((landmark_y - pos(2))^2 + (landmark_x - pos(1))^2);
-end
-
-function rand_val = get_random(m,n)
-    rand_val = (-1).*ones(m,n) + 2.*rand(m,n);
 end
 
