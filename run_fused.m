@@ -44,6 +44,7 @@ function run_fused(numSteps, filter_name, if_toy_prob)
       initialStateCov = eye(3*Num);    
       filter = ...
         filter_initialization(sys, initialStateMean, initialStateCov, filter_name,Num);
+    
       case {"PF"}
       % Record the filtered positions of the robot group
         filtered_robot1 = NaN .* zeros(3,numSteps-1);
@@ -68,19 +69,32 @@ for t = 1 : numSteps-1
     motionCommand = action_for_robots(:,t); 
     % [relative bearing, relative range] (noisy observation)
     % 2*Num*(Num-1) * 1
-    observation = measurement_z_landmark(:,t+1);
-      
+
     switch filter_name
         case {"EKF"}
+           landmark_measurement_z_t = measurement_z_landmark(:,t+1);
+           relative_measurement_z_t = measurement_z_relative(:, t+1);
+           motionCommand = motionCommand + 0.00001.*randn(size(motionCommand));
            filter.prediction(motionCommand);
-           filter.mu = filter.mu_pred;
-%            filter.correction_relative(observation);
-%            filter.correction_landmark(observation);
-%            filter.correction_batch(observation, observation);
-%          draw_ellipse(filter.mu(1:2), filter.Sigma(1:2,1:2),9)
-           filtered_robot1(:,t) = filter.mu(1:3,1);
-           filtered_robot2(:,t) = filter.mu(4:6,1);
-           filtered_robot3(:,t) = filter.mu(7:9,1);
+%            filter.mu = filter.mu_pred;
+%            filter.correction_landmark(landmark_measurement_z_t, landmark);
+%            filter.mu_pred = filter.mu;
+%            filter.Sigma_pred = filter.Sigma;
+%            filter.correction_relative(relative_measurement_z_t);
+           filter.correction_relative_single(relative_measurement_z_t);
+     
+           filtered_robot(1:3,t) = filter.mu(1:3,1);
+           filtered_robot(4:6,t) = filter.mu(4:6,1);
+           filtered_robot(7:9,t) = filter.mu(7:9,1);
+           
+%            % Draw uncertainty           
+%             draw_ellipse(filter.mu(1:2), filter.Sigma(1:2,1:2),9)
+%             hold on
+%             draw_ellipse(filter.mu(4:5), filter.Sigma(4:5,4:5),9)
+%             hold on
+%             draw_ellipse(filter.mu(7:8), filter.Sigma(7:8,7:8),9)
+%             hold on
+             
        case {"PF"}
            % Peform PF for each robot
              filter1.prediction(motionCommand(1:3,1));
@@ -122,7 +136,9 @@ for t = 1 : numSteps-1
 %              draw_ellipse(filter3.mu(1:2), filter3.Sigma(1:2,1:2),9)
 
 
-  cla
+
+    end%   cla
+  hold on
   p1 = plot(X_ground_truth(1,:),X_ground_truth(2,:),'b*','markersize',5);
   hold on
   p2 = plot(X_ground_truth(4,:),X_ground_truth(5,:),'bs','markersize',5);
@@ -135,7 +151,6 @@ for t = 1 : numSteps-1
   hold on
   p6 = plot(filtered_robot(7,:),filtered_robot(8,:),'rd','markersize',5);
   axis equal;
-    end
 end
 
 %% Visualization

@@ -78,157 +78,184 @@ classdef EKF < handle
         end
         
         %% Complete correction function - robot
-        function correction_relative(obj, z)
+        function correction_relative_single(obj, z)
                     
-           % Allocate the storage for z_hat and Jacobian H
-             z_hat = zeros(2*obj.Num*(obj.Num-1),1);
-             H_local = zeros(2*obj.Num*(obj.Num-1),3*obj.Num);
-           % Loop through all pairs of robots
-             for i = 1 : obj.Num
-                 jj = 0;
-                 for j = 1 : obj.Num
-                   if i ~= j
-                     jj = jj + 1;
-                   % Compute the anticipated measurements  
-                     z_hat(2*(obj.Num-1)*(i-1) + 2*(jj-1)+1 : 2*(obj.Num-1)*(i-1) + 2*jj,1) = ...
-                         obj.hfun_relative(obj.mu_pred(3*(i-1)+1:3*i,1), obj.mu_pred(3*(j-1)+1:3*j,1));
-                   % Construct the Jacobian H
-                   % Current version takes all relative measurements into account
-                     [H_bearing_i,H_bearing_j,H_range_i,H_range_j] = ...
-                         H_relative(obj.mu_pred(3*(i-1)+1:3*i,1),obj.mu_pred(3*(j-1)+1:3*j,1));
-                     flag_usage = determine_usage();
-                   % Judge whether to fuse the current relative measurement
-                     if flag_usage
-                        H_local(2*(obj.Num-1)*(i-1)+2*(jj-1)+1,3*(i-1)+1:3*i) =...
-                                   H_bearing_i;
-                        H_local(2*(obj.Num-1)*(i-1)+2*(jj-1)+1,3*(j-1)+1:3*j) =...
-                                   H_bearing_j;
-                        H_local(2*(obj.Num-1)*(i-1)+2*jj,3*(i-1)+1:3*i) =...
-                                   H_range_i;
-                        H_local(2*(obj.Num-1)*(i-1)+2*jj,3*(j-1)+1:3*j) =...
-                                   H_range_j;       
-                     end
-                   end
-                     
-                 end
-             end
+            % Allocate the storage for z_hat and Jacobian H
+            z_hat = zeros(2*obj.Num, 1); 
+            z_relevant = zeros(2*obj.Num, 1); 
+            H_local = zeros(2*obj.Num, 3*obj.Num);
+            
+            iter = 1;
+            % Loop through all pairs of robots
+            for i = 1 : obj.Num
+                j = mod(i + iter, obj.Num);
+                if j == 0
+                    j = obj.Num;
+                end
+                
+                % Compute z_relevant
+                if i<j
+                    z_pos = 2*((i-1)*(obj.Num-1)+(j-1)-1);
+                else
+                    z_pos = 2*((i-1)*(obj.Num-1)+(j)-1);
+                end
+                
+                z_relevant(2*(i-1)+1:2*i, 1) = z(z_pos+1 : z_pos+2,1);
+                
+                % Compute the anticipated measurements  
+                z_hat(2*(i-1)+1 : 2*i, 1) = ...
+                    obj.hfun_relative(obj.mu_pred(3*(i-1)+1:3*i,1), obj.mu_pred(3*(j-1)+1:3*j,1));
+
+                % Construct the Jacobian H
+                % Current version takes all relative measurements into account
+                [H_bearing_i, H_bearing_j, H_range_i, H_range_j] = ...
+                     H_relative(obj.mu_pred(3*(i-1)+1:3*i,1), obj.mu_pred(3*(j-1)+1:3*j,1));
+
+                % Judge whether to fuse the current relative measurement
+                flag_usage = determine_usage();
+                if flag_usage                               
+                    H_local(2*(i-1)+1, 3*(i-1)+1:3*i) = H_bearing_i;
+                    H_local(2*i, 3*(i-1)+1:3*i) = H_range_i;
+                    H_local(2*(i-1)+1, 3*(j-1)+1:3*j) = H_bearing_j;
+                    H_local(2*i, 3*(j-1)+1:3*j) = H_range_j;
+                end
+            end
              
-          % stack the measurement noise
-            Q_stack = zeros(2*obj.Num*(obj.Num-1),2*obj.Num*(obj.Num-1));
-            for i = 1 : obj.Num*(obj.Num-1)
+            % stack the measurement noise
+            Q_stack = zeros(2*obj.Num, 2*obj.Num);
+            for i = 1 : obj.Num
                 Q_stack(2*(i-1)+1:2*i , 2*(i-1)+1:2*i) = obj.Q;
             end
-          % innovation covariance
+            % innovation covariance
             S = H_local * obj.Sigma_pred * H_local' + Q_stack;
         
-          % compute innovation statistics                
-            v = z - z_hat;
-          % Wrap the bearing to the range [0,+pi]
-            for i = 1 : obj.Num*(obj.Num - 1)
-               v(2*i) = wrapToPi(v(2*i));
+            % compute innovation statistics  
+            v = z_relevant - z_hat;
+            % Wrap the bearing to the range [0,+pi]
+            for i = 1 : obj.Num
+               v(2*(i-1)+1) = wrapToPi(v(2*(i-1)+1));
             end
             
-          % filter gain
+            % filter gain
             K = obj.Sigma_pred * H_local' * (S \ eye(size(S)));
             
-          % correct the predicted state statistics
+            % correct the predicted state statistics
             obj.mu = obj.mu_pred + K * v;
-          % Wrap the angle to the range [0,+pi]
+            % Wrap the angle to the range [0,+pi]
             for i = 1 : obj.Num
                 obj.mu(3*i) = wrapToPi(obj.mu(3*i));
             end
             
-          % Joseph update form
+            % Joseph update form
+            i = eye(length(obj.mu));
+            obj.Sigma = (i - K * H_local) * obj.Sigma_pred * (i - K * H_local)' ...
+                    + K * Q_stack * K'; 
+        end
+        
+        %% Complete correction function - robot
+        function correction_relative(obj, z)
+                    
+            % Allocate the storage for z_hat and Jacobian H
+            z_hat = zeros(2*obj.Num*(obj.Num-1),1);
+             
+            H_local = zeros(2*obj.Num*(obj.Num-1), 3*obj.Num);
+            % Loop through all pairs of robots
+            
+            for i = 1 : obj.Num
+                jj = 0;
+                 
+                for j = 1 : obj.Num
+                     
+                    if i ~= j
+                        
+                        jj = jj + 1;
+                        
+                        % Compute the anticipated measurements  
+                        z_hat(2*(obj.Num-1)*(i-1) + 2*(jj-1)+1 : 2*(obj.Num-1)*(i-1) + 2*jj,1) = ...
+                            obj.hfun_relative(obj.mu_pred(3*(i-1)+1:3*i,1), obj.mu_pred(3*(j-1)+1:3*j,1));
+                        
+                        % Construct the Jacobian H
+                        % Current version takes all relative measurements into account
+                        [H_bearing_i, H_bearing_j, H_range_i, H_range_j] = ...
+                             H_relative(obj.mu_pred(3*(i-1)+1:3*i,1), obj.mu_pred(3*(j-1)+1:3*j,1));
+                         
+                        % Judge whether to fuse the current relative measurement
+                        flag_usage = determine_usage();
+                        if flag_usage                               
+                            H_local(2*(obj.Num-1)*(i-1)+2*(jj-1)+1, 3*(i-1)+1:3*i) = H_bearing_i;
+                            H_local(2*(obj.Num-1)*(i-1)+2*(jj-1)+1, 3*(j-1)+1:3*j) = H_bearing_j;
+                            H_local(2*(obj.Num-1)*(i-1)+2*jj, 3*(i-1)+1:3*i) = H_range_i;
+                            H_local(2*(obj.Num-1)*(i-1)+2*jj, 3*(j-1)+1:3*j) = H_range_j;
+                        end
+                    end   
+                 end
+            end
+%             obj.mu = obj.mu_pred;
+%             obj.Sigma = obj.Sigma_pred;
+             
+            % stack the measurement noise
+            Q_stack = zeros(2*obj.Num*(obj.Num-1),2*obj.Num*(obj.Num-1));
+            for i = 1 : obj.Num*(obj.Num-1)
+                Q_stack(2*(i-1)+1:2*i , 2*(i-1)+1:2*i) = obj.Q;
+            end
+            % innovation covariance
+            S = H_local * obj.Sigma_pred * H_local' + Q_stack;
+        
+            % compute innovation statistics                
+            v = z - z_hat;
+            % Wrap the bearing to the range [0,+pi]
+            for i = 1 : obj.Num*(obj.Num - 1)
+               v(2*i) = wrapToPi(v(2*i));
+            end
+            
+            % filter gain
+            K = obj.Sigma_pred * H_local' * (S \ eye(size(S)));
+            
+            % correct the predicted state statistics
+            obj.mu = obj.mu_pred + K * v;
+            % Wrap the angle to the range [0,+pi]
+            for i = 1 : obj.Num
+                obj.mu(3*i) = wrapToPi(obj.mu(3*i));
+            end
+            
+            % Joseph update form
             i = eye(length(obj.mu));
             obj.Sigma = (i - K * H_local) * obj.Sigma_pred * (i - K * H_local)' ...
                     + K * Q_stack * K'; 
         end
         
          %% Complete correction function - landmark
-         function correction_landmark(obj, z)
-           
-           % Update all robots simutaniously with 1 reference landmark,
-           % Observations: bearing, range
-           z_hat = zeros(2*obj.Num, 1);
-           H = zeros(2*obj.Num, 3); % consider only one landmark
-           
-            for i = 1 : obj.Num
-                landmark_x = z(2*(i-1)+1);
-                landmark_y = z(2*i);
-                z_hat(2*(i-1)+1: 2*i, 1) = obj.hfun_landmark(landmark_x, landmark_y, obj.mu_pred);
-
-                % Compute expected observation and Jacobian
-                H_i = obj.Hfun(landmark_x, landmark_y, obj.mu_pred, z_hat(2*(i-1)+1: 2*i, 1));
-
-                % Innovation / residual covariance
-                % update covariance for robot one-by-one
-                S_i = H_i*obj.Sigma_pred(3*(i-1)+1:3*i, 3*(i-1)+1:3*i)*H_i' + obj.Q;
-                % Kalman gain
-                K_i = obj.Sigma_pred(3*(i-1)+1:3*i, 3*(i-1)+1:3*i) * H_i' * S_i^-1;
-                K(3*(i-1)+1:3*i, :) = K_i;
-                
-                % Correction
-                diff_i = [...
-                        wrapToPi(z(2*(i-1)+1, 1) - z_hat(2*(i-1)+1, 1));
-                        z(2*i, 1) - z_hat(2*i, 1)];
-            
-                obj.mu(3*(i-1)+1:3*i, 1) = obj.mu_pred(3*(i-1)+1:3*i, 1) + K_i * diff_i;
-                obj.mu(3*i, 1) = wrapToPi(obj.mu(3*i, 1));
-                
-                U_i = eye(length(obj.mu(3*(i-1)+1:3*i, 1))) - K_i * H_i;
-                obj.Sigma(3*(i-1)+1:3*i, 3*(i-1)+1:3*i) = U_i * obj.Sigma_pred(3*(i-1)+1:3*i, 3*(i-1)+1:3*i) * U_i' + K_i * obj.Q * K_i';
-           end 
-         end
-         
-         
-         %% Complete correction function - Landmark & Relative
-         function correction_batch(obj, z, z_robot)
+         function correction_landmark(obj, z, landmark)
             % Allocate the storage for z_hat and Jacobian H
-             z_hat = zeros(2*obj.Num*(obj.Num-1),1);
-             H_local = zeros(2*obj.Num*(obj.Num-1),3*obj.Num);
-            % Loop through all pairs of robots
+             z_hat = zeros(2*obj.Num,1);
+             H_local = zeros(2*obj.Num,3*obj.Num);
+           % Loop through all robots
              for i = 1 : obj.Num
-                 jj = 0;
-                 for j = 1 : obj.Num
-                   if i ~= j
-                     jj = jj + 1;
-                   % Compute the anticipated measurements  
-                     z_hat(2*(obj.Num-1)*(i-1) + 2*(jj-1)+1 : 2*(obj.Num-1)*(i-1) + 2*jj,1) = ...
-                         obj.hfun_relative(obj.mu_pred(3*(i-1)+1:3*i,1), obj.mu_pred(3*(j-1)+1:3*j,1));
-                   % Construct the Jacobian H
-                   % Current version takes all relative measurements into account
-                     [H_bearing_i,H_bearing_j,H_range_i,H_range_j] = ...
-                         H_relative(obj.mu_pred(3*(i-1)+1:3*i,1),obj.mu_pred(3*(j-1)+1:3*j,1));
-                     flag_usage = determine_usage();
-                   % Judge whether to fuse the current relative measurement
-                     if flag_usage
-                        H_local(2*(obj.Num-1)*(i-1)+2*(jj-1)+1,3*(i-1)+1:3*i) =...
-                                   H_bearing_i;
-                        H_local(2*(obj.Num-1)*(i-1)+2*(jj-1)+1,3*(j-1)+1:3*j) =...
-                                   H_bearing_j;
-                        H_local(2*(obj.Num-1)*(i-1)+2*jj,3*(i-1)+1:3*i) =...
-                                   H_range_i;
-                        H_local(2*(obj.Num-1)*(i-1)+2*jj,3*(j-1)+1:3*j) =...
-                                   H_range_j;       
-                     end
-                   end
-                     
-                 end
+                % Compute the anticipated measurements  
+                z_hat(2*(i-1)+1 : 2*i,1) = ...
+                     obj.hfun_landmark(landmark(1),landmark(2),obj.mu_pred(3*(i-1)+1:3*i,1));
+                % Construct the Jacobian H
+                H_blcok = obj.Hfun(landmark(1),landmark(2),...
+                                obj.mu_pred(3*(i-1)+1:3*i,1),...
+                                z_hat(2*(i-1)+1 : 2*i,1));
+                H_local(2*(i-1)+1:2*i, 3*(i-1)+1:3*i) = H_blcok;           
              end
              
           % stack the measurement noise
-            Q_stack = zeros(2*obj.Num*(obj.Num-1),2*obj.Num*(obj.Num-1));
-            for i = 1 : obj.Num*(obj.Num-1)
+            Q_stack = zeros(2*obj.Num, 2*obj.Num);
+            for i = 1 : obj.Num
                 Q_stack(2*(i-1)+1:2*i , 2*(i-1)+1:2*i) = obj.Q;
             end
+            
           % innovation covariance
             S = H_local * obj.Sigma_pred * H_local' + Q_stack;
         
           % compute innovation statistics                
+%             v = landmark - z_hat;
             v = z - z_hat;
           % Wrap the bearing to the range [0,+pi]
-            for i = 1 : obj.Num*(obj.Num - 1)
-               v(2*i) = wrapToPi(v(2*i));
+            for i = 1 : obj.Num
+               v(2*(i-1)+1) = wrapToPi(v(2*(i-1)+1));
             end
             
           % filter gain
@@ -245,9 +272,25 @@ classdef EKF < handle
             i = eye(length(obj.mu));
             obj.Sigma = (i - K * H_local) * obj.Sigma_pred * (i - K * H_local)' ...
                     + K * Q_stack * K'; 
-        end
-        
-       
+
+         end
+         
+         
+        %% The following function computes the block of jacobian caused 
+         %   by relative bearing measurement
+         function [H_bearing_i,H_bearing_j,H_range_i,H_range_j] = H_relative(pos_i,pos_j)
+            % For details of the following equation, readers are refered to
+            % eq.(11) in Agostino et al. 2005
+              delta_x = pos_j(1) - pos_i(1);
+              delta_y = pos_j(2) - pos_i(2);
+              H_bearing_i = [delta_y/(delta_x^2 + delta_y^2), -delta_x/(delta_x^2 + delta_y^2),-1];
+              H_bearing_j = [-delta_y/(delta_x^2 + delta_y^2),delta_x/(delta_x^2 + delta_y^2),0];
+            % For details of the following equation, readers are refered to
+            % eq.(12) in Agostino et al. 2005 
+              H_range_i = [-delta_x/sqrt(delta_x^2+delta_y^2),-delta_y/sqrt(delta_x^2+delta_y^2),0];
+              H_range_j = [delta_x/sqrt(delta_x^2+delta_y^2),delta_y/sqrt(delta_x^2+delta_y^2),0];
+         end
+      
     end
 end
 
