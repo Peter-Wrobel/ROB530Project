@@ -26,16 +26,15 @@ function run_fused(numSteps, filter_name, if_toy_prob)
        [X_ground_truth,landmark,measurement_z_landmark,...
            measurement_z_relative,action_for_robots] = toy_problem_gen(deltaT,numSteps);
      else
-       load('data_all.mat');
+       load('data_all_ss.mat');
      end
   % Employ the real data set   
   else
       % Employ the real data set
      [X_ground_truth,landmark,measurement_z_landmark,...
          measurement_z_relative,action_for_robots, numSteps] = real_problem_gen(deltaT, Num);
-     action_for_robots = action_for_robots + 0.0001.*randn(size(action_for_robots));
   end
-
+     action_for_robots = action_for_robots + 0.0001.*randn(size(action_for_robots));
   %% Initialization Based on Different Filter Selection
   sys = system_initialization(alphas, beta, deltaT);
   switch filter_name
@@ -74,26 +73,25 @@ for t = 1 : numSteps-1
         case {"EKF"}
            landmark_measurement_z_t = measurement_z_landmark(:,t+1);
            relative_measurement_z_t = measurement_z_relative(:, t+1);
-           motionCommand = motionCommand + 0.00001.*randn(size(motionCommand));
            filter.prediction(motionCommand);
-%            filter.mu = filter.mu_pred;
+           filter.mu = filter.mu_pred;
 %            filter.correction_landmark(landmark_measurement_z_t, landmark);
 %            filter.mu_pred = filter.mu;
 %            filter.Sigma_pred = filter.Sigma;
 %            filter.correction_relative(relative_measurement_z_t);
-           filter.correction_relative_single(relative_measurement_z_t);
+%            filter.correction_relative_single(relative_measurement_z_t);
      
            filtered_robot(1:3,t) = filter.mu(1:3,1);
            filtered_robot(4:6,t) = filter.mu(4:6,1);
            filtered_robot(7:9,t) = filter.mu(7:9,1);
            
-%            % Draw uncertainty           
-%             draw_ellipse(filter.mu(1:2), filter.Sigma(1:2,1:2),9)
-%             hold on
-%             draw_ellipse(filter.mu(4:5), filter.Sigma(4:5,4:5),9)
-%             hold on
-%             draw_ellipse(filter.mu(7:8), filter.Sigma(7:8,7:8),9)
-%             hold on
+           % Draw uncertainty           
+            draw_ellipse(filter.mu(1:2), filter.Sigma(1:2,1:2),9)
+            hold on
+            draw_ellipse(filter.mu(4:5), filter.Sigma(4:5,4:5),9)
+            hold on
+            draw_ellipse(filter.mu(7:8), filter.Sigma(7:8,7:8),9)
+            hold on
              
        case {"PF"}
            % Peform PF for each robot
@@ -102,42 +100,43 @@ for t = 1 : numSteps-1
              filter3.prediction(motionCommand(7:9,1));
             
            % Correction with Landmark Measurements
-            measurement_z_landmark_buff = measurement_z_landmark(2,:);
-            measurement_z_landmark(2,:) = measurement_z_landmark(3,:);
-            measurement_z_landmark(3,:) = measurement_z_landmark_buff;
+%             measurement_z_landmark_buff = measurement_z_landmark(2,:);
+%             measurement_z_landmark(2,:) = measurement_z_landmark(3,:);
+%             measurement_z_landmark(3,:) = measurement_z_landmark_buff;
 %             if measurement_z_landmark(1,t+1) ~= -1
 %                    filter1.correction_landmark...
 %                        (measurement_z_landmark(2:3,t+1),landmark(measurement_z_landmark(1,t+1),:));
 %             end
                 
               
-%              filter1.correction_landmark(measurement_z_landmark(1:2,t+1),landmark);
-%              filter2.correction_landmark(measurement_z_landmark(3:4,t+1),landmark);
-%              filter3.correction_landmark(measurement_z_landmark(5:6,t+1),landmark);
+             filter1.correction_landmark(measurement_z_landmark(1:2,t+1),landmark);
+             filter2.correction_landmark(measurement_z_landmark(3:4,t+1),landmark);
+             filter3.correction_landmark(measurement_z_landmark(5:6,t+1),landmark);
              
            % Recursive Correction with Relative Measurements
              relative_pos1 = [filter2.mu(:,1);filter3.mu(:,1)];
              relative_pos2 = [filter1.mu(:,1);filter3.mu(:,1)];
              relative_pos3 = [filter1.mu(:,1);filter2.mu(:,1)];
-%              filter1.correction_relative(measurement_z_relative(1:4,t+1),relative_pos1,Num);
-%              filter2.correction_relative(measurement_z_relative(5:8,t+1),relative_pos2,Num);
-%              filter3.correction_relative(measurement_z_relative(9:12,t+1),relative_pos3,Num);
+             filter1.correction_relative(measurement_z_relative(1:4,t+1),relative_pos1,Num);
+             filter2.correction_relative(measurement_z_relative(5:8,t+1),relative_pos2,Num);
+             filter3.correction_relative(measurement_z_relative(9:12,t+1),relative_pos3,Num);
            
            % Record the estimated postions
              filtered_robot(1:3,t) = filter1.mu(:,1);
              filtered_robot(4:6,t) = filter2.mu(:,1);
              filtered_robot(7:9,t) = filter3.mu(:,1);
              
-%              hold on
-%              draw_ellipse(filter1.mu(1:2), filter1.Sigma(1:2,1:2),9)
-%              hold on
-%              draw_ellipse(filter2.mu(1:2), filter2.Sigma(1:2,1:2),9)
-%              hold on
-%              draw_ellipse(filter3.mu(1:2), filter3.Sigma(1:2,1:2),9)
+             hold on
+             draw_ellipse(filter1.mu(1:2), filter1.Sigma(1:2,1:2),9)
+             hold on
+             draw_ellipse(filter2.mu(1:2), filter2.Sigma(1:2,1:2),9)
+             hold on
+             draw_ellipse(filter3.mu(1:2), filter3.Sigma(1:2,1:2),9)
+             drawnow
+     end
 
 
-
-    end%   cla
+%      cla
   hold on
   p1 = plot(X_ground_truth(1,:),X_ground_truth(2,:),'b*','markersize',5);
   hold on
@@ -151,6 +150,7 @@ for t = 1 : numSteps-1
   hold on
   p6 = plot(filtered_robot(7,:),filtered_robot(8,:),'rd','markersize',5);
   axis equal;
+  drawnow
 end
 
 %% Visualization

@@ -114,16 +114,16 @@ function [X_ground_truth,landmark,measurement_z_landmark,...
             relative_measurement_generation(X_ground_truth(3*(i-1)+1:3*i,k),...
                                             X_ground_truth(3*(j-1)+1:3*j,k));
           % measurement noises should be taken into account here
-            measurement_z_relative(2*(Num-1)*(i-1) + 2*(jj-1)+1,k) = bearing + beta*randn;
-            measurement_z_relative(2*(Num-1)*(i-1) + 2*jj,k) = range + 25*randn;
+            measurement_z_relative(2*(Num-1)*(i-1) + 2*(jj-1)+1,k) = bearing + 0.1.*beta*randn;
+            measurement_z_relative(2*(Num-1)*(i-1) + 2*jj,k) = range + 0.1.*25*randn;
           end
       end
       %% Generate Landmark measurement
          [bearing,range] = ...
           Landmark_measurement_generation(landmark,X_ground_truth(3*(i-1)+1:3*i,k));
         % measurement noises should be added here
-          measurement_z_landmark(2*(i-1)+1,k) = bearing + beta*randn;
-          measurement_z_landmark(2*(i-1)+2,k) = range + 25*randn;
+          measurement_z_landmark(2*(i-1)+1,k) = bearing + 0.1.*beta*randn;
+          measurement_z_landmark(2*(i-1)+2,k) = range + 0.1.*25*randn;
     end
   end
   
@@ -136,7 +136,7 @@ function [X_ground_truth,landmark,measurement_z_landmark,...
   hold on
   plot(landmark(1),landmark(2),'gd','markersize',10);
   axis equal;
-  save('data_all');
+  save('data_all_ss');
 end
 
 %% Motion of Robot

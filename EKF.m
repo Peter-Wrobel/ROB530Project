@@ -141,6 +141,10 @@ classdef EKF < handle
             
             % correct the predicted state statistics
             obj.mu = obj.mu_pred + K * v;
+            a = max(abs(K*v));
+            if a >= 0.5
+%                error('large')
+            end
             % Wrap the angle to the range [0,+pi]
             for i = 1 : obj.Num
                 obj.mu(3*i) = wrapToPi(obj.mu(3*i));
