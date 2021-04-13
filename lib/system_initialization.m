@@ -26,6 +26,6 @@ sys.M = @(u) [...
 %% Measurement noise
 sys.Q = [...
         beta^2,    0;
-        0,      25^2];
+        0,      0.1];
 
 end

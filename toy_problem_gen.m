@@ -4,7 +4,7 @@ function [X_ground_truth,landmark,measurement_z_landmark,...
 
 %% The following parameters will be supplied as inputs later
   Num = 3; % number of robots
-  landmark = [0 105]'; % position of landmarks
+  landmark = [23 13]'; % position of landmarks
   % Motion noise (see HW5)
   alphas = [0.00025 0.00005 ...
             0.0025 0.0005 ...
@@ -13,7 +13,7 @@ function [X_ground_truth,landmark,measurement_z_landmark,...
   
 % Stipulate the inputs for robot1 (current version is noiseless)
   action_for_robot1 = ones(3,numSteps-1);
-  action_for_robot1(2,:) = 0.1.*ones(1,numSteps-1);
+  action_for_robot1(2,:) = 0.01.*ones(1,numSteps-1);
   action_for_robot1(3,:) = zeros(1,numSteps-1); 
   noise_v = sqrt(alphas(1).*action_for_robot1(1,:).^2 + alphas(2).*action_for_robot1(2,:).^2) ...
             .* randn(1,numSteps-1);
@@ -122,8 +122,8 @@ function [X_ground_truth,landmark,measurement_z_landmark,...
          [bearing,range] = ...
           Landmark_measurement_generation(landmark,X_ground_truth(3*(i-1)+1:3*i,k));
         % measurement noises should be added here
-          measurement_z_landmark(2*(i-1)+1,k) = bearing + beta*randn;
-          measurement_z_landmark(2*(i-1)+2,k) = range + 25*randn;
+          measurement_z_landmark(2*(i-1)+1,k) = bearing; % + beta*randn;
+          measurement_z_landmark(2*(i-1)+2,k) = range ;
     end
   end
   

@@ -93,14 +93,13 @@ classdef PF < handle
               % Compute the measurement
                 z_hat_local = ...
                      obj.hfun_landmark(landmark(1),landmark(2),obj.particles(:,j));
-           
               % Compute the Innovation
                 v = z - z_hat_local;
               % Wrap the bearing to [0 pi]
                 v(1) = wrapToPi(v(1));
                  
                % Get weight probability of difference in measurement
-                 weight(j) = mvnpdf(v, 0, 2.*obj.Q);
+                 weight(j) = mvnpdf(v, 0, 200.*obj.Q);
             end
             
           % Update Weights
