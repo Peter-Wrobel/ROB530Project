@@ -19,7 +19,7 @@ function [X_ground_truth,landmark,measurement_z_landmark,measurement_z_relative,
 %}
                                                                                
 % Constant, object declerations    
-DATASET = 3;
+DATASET = 2;
 TIME_STEP = t_step;                            %determines what time interval beween measurements for example, TIME_STEP = 0.5 gives 0, 0.5, 1, 1.5, ...
 NUM_SEC   = 100;
 parseObj = dataparse(DATASET, TIME_STEP, NUM_SEC);
@@ -43,6 +43,10 @@ for rob_num = 1:Num
     action_for_robots     (3*rob_num -2 : 3*rob_num-1, :) = OD(:,2:3)';
     measurement_z_landmark(3*rob_num -2 : 3*rob_num, :)   = MS(:,2:4)';
 
+    measurement_z_landmark_buff = measurement_z_landmark(3*rob_num-1,:);
+    measurement_z_landmark(3*rob_num-1,:) = measurement_z_landmark(3*rob_num,:);
+    measurement_z_landmark(3*rob_num,:) = measurement_z_landmark_buff;
+    
 end
 
 %Robot Relative data. Set 'var' for messy measurements
@@ -55,12 +59,21 @@ for i = 1:Num
         if i~=j
             rb_i = X_ground_truth(3*i - 2: 3*i, :)';
             rb_j = X_ground_truth(3*j - 2: 3*j, :)';
-            measurement_z_relative(jj:jj+1, :) = parseObj.rel_measure( rb_j, rb_i, var)';
+            measurement_z_relative(jj:jj+1, :) = relative_measurement_generation(rb_i, rb_j, var);
             jj = jj+2;
         end
     end
 end
-
 %Number of steps
 numSteps = parseObj.time_length();
+end
+
+function measurement_rel = relative_measurement_generation(rb_j,rb_i,var)
+  delta_x = rb_j(:,1) - rb_i(:,1);
+  delta_y = rb_j(:,2) - rb_i(:,2);
+  bearing = wrapToPi(atan2(delta_y, delta_x)) - rb_i(:,3);
+  range = sqrt(delta_x.^2 + delta_y.^2);
+  measurement_rel = [bearing';range'];
+end
+
 

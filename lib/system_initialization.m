@@ -24,8 +24,15 @@ sys.M = @(u) [...
     0, 0, alphas(5)*u(1)^2+alphas(6)*u(2)^2];
 
 %% Measurement noise
-sys.Q = [...
+
+% % Work for EKF
+% sys.Q = [...
+%         beta^2,    0;
+%         0,      25^2];
+    
+sys.Q = 200 * [...
         beta^2,    0;
-        0,      25^2];
+        0,       0.1];
+
 
 end
