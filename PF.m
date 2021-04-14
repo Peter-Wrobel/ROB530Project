@@ -57,8 +57,9 @@ classdef PF < handle
             for p = 1 : obj.n
               for j = 1 : Number - 1
                    % Compute the anticipated measurements  
-                     z_hat(2*(j-1)+1:2*j,1) = ...
-                         obj.hfun_relative(obj.particles(:,p),relative_pos(3*(j-1)+1:3*j,1));
+                     %z_hat(2*(j-1)+1:2*j,1) = ...
+                         %obj.hfun_relative(obj.particles(:,p),relative_pos(3*(j-1)+1:3*j,1));
+                      z_hat(2*(j-1)+1:2*j,1) = obj.hfun_landmark(obj.particles(1,p), obj.particles(2,p), relative_pos(3*(j-1)+1:3*j,1));
               end
               
               v = z - z_hat;
@@ -72,7 +73,7 @@ classdef PF < handle
                   Q_stack(2*(i-1)+1:2*i , 2*(i-1)+1:2*i) = obj.Q;
               end
 
-              w(p) = mvnpdf(v, 0, 2.*Q_stack);
+              w(p) = mvnpdf(v, 0, 200.*Q_stack);
            end
             
            

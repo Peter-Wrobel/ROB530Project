@@ -1,4 +1,4 @@
-parseObj = dataparse(1, 1);
+parseObj = dataparse(1, 1,100);
 
 %Raw groundtruth data from dataset. Arranged [time, x pos, y pos, theta(unneccessary)]
 M = containers.Map()

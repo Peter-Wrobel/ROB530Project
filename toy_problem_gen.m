@@ -114,8 +114,8 @@ function [X_ground_truth,landmark,measurement_z_landmark,...
             relative_measurement_generation(X_ground_truth(3*(i-1)+1:3*i,k),...
                                             X_ground_truth(3*(j-1)+1:3*j,k));
           % measurement noises should be taken into account here
-            measurement_z_relative(2*(Num-1)*(i-1) + 2*(jj-1)+1,k) = bearing + beta*randn;
-            measurement_z_relative(2*(Num-1)*(i-1) + 2*jj,k) = range + 25*randn;
+            measurement_z_relative(2*(Num-1)*(i-1) + 2*(jj-1)+1,k) = bearing ;%+ beta*randn;
+            measurement_z_relative(2*(Num-1)*(i-1) + 2*jj,k) = range ;%+ 25*randn;
           end
       end
       %% Generate Landmark measurement
@@ -163,7 +163,7 @@ end
 function [bearing,range] = relative_measurement_generation(pos_i,pos_j)
   delta_x = pos_j(1) - pos_i(1);
   delta_y = pos_j(2) - pos_i(2);
-  bearing = wrapToPi(atan((-sin(pos_i(3))*delta_x+cos(pos_i(3))*delta_y)...
+  bearing = wrapToPi(atan((delta_x+cos(pos_i(3))*delta_y)...
                          /( cos(pos_i(3))*delta_x+sin(pos_i(3))*delta_y)));
   range = sqrt(delta_x^2 + delta_y^2);
 end
