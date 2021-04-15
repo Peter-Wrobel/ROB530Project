@@ -45,5 +45,5 @@ run_fused(100, 'EKF', false)
 ```
 Example command for PF, using toy data:
 ```
-run_fused(100, 'EKF', true)
+run_fused(100, 'PF', true)
 ```
