@@ -4,13 +4,11 @@ classdef dataparse
    properties 
        dataset_num;                 % number of MRCLAM trial
        path_str;                    % directory of MCRLAM dataset
-       SYNC_TIME_BEF;  % No time readings before this
-       SYNC_TIME_AFT;  % No time readings after  this
+       SYNC_TIME_BEF;               % No time readings before this
+       SYNC_TIME_AFT;               % No time readings after  this
        TOTAL_TIME;
        Tdel;
   
-       
-       
    end
    
    methods
@@ -56,18 +54,13 @@ classdef dataparse
         table_ans = table2array(LM_GT);
       end
        
-       
-       
-      
       function [GT, OD, MS] = parse_robot(obj,robot_num, landmark_codes)
 
         robot_str = strcat("Robot", int2str(robot_num), "_");
 
-
         rb_gt_file = strcat(obj.path_str,robot_str, "Groundtruth.dat");
         rb_od_file = strcat(obj.path_str,robot_str, "Odometry.dat");
         rb_ms_file = strcat(obj.path_str,robot_str, "Measurement.dat");
-
 
         RB_GT = readtable(rb_gt_file);
         RB_OD = readtable(rb_od_file);
@@ -108,8 +101,6 @@ classdef dataparse
             
         end
         
-        
-        
         %OD adjustment
         OD(OD(:,1)<obj.SYNC_TIME_BEF, :) = [];
         OD(OD(:,1)>obj.SYNC_TIME_AFT, :) = [];
@@ -141,7 +132,6 @@ classdef dataparse
             
         end
         
-        
         %MS adjustment
         MS(MS(:,1)<obj.SYNC_TIME_BEF, :) = [];
         MS(MS(:,1)>obj.SYNC_TIME_AFT, :) = [];
@@ -170,33 +160,33 @@ classdef dataparse
                 MS = [MS(1:index-1,:); [ts,-1,-1, -1]; MS(index:end,:)];
                 index = index+1;
             end
-            
-            
         end
-        
-        
-        
-
       end
         
       %returns polar coordinates of robot2 relative to robot1
       function reso = rel_measure(obj ,RB_GT1, RB_GT2, var)
           
+          
+          theta1 = RB_GT1(:,1);
           x1 = RB_GT1(:,2);
           y1 = RB_GT1(:,3);
+          
+          theta2 = RB_GT2(:,1);
           x2 = RB_GT2(:,2);
           y2=  RB_GT2(:,3);
-
+          
+          
           range = sqrt((x2-x1).^2 +(y2-y1).^2);
           range = range + normrnd(0,var,size(x2)); 
           theta = wrapToPi(atan2((y2-y1),(x2-x1)));
           
-          reso = [theta, range];
+          numerator = -sin(theta1).*(x2-x1) + cos(theta1).*(y2-y1);
+          denominator = cos(theta1).*(x2-x1) + sin(theta1).*(y2-y1);
+          theta1 = wrapToPi(atan2(numerator,denominator));
           
+          reso = [theta1, range];
           
       end
-      
-
    end
 end
 
