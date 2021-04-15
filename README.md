@@ -19,7 +19,7 @@ The code is tested on Matlab 2021a.
 
 The toy problem data is a synthetic data create by the project group. It is created by adding additional white noise to the synthetic control inputs and ground truth measurements of landmark and relative location. An example of generated toy data with 3 robots is shown below.
 
-<img src="./gt_toy.png" width="600px"></img>
+<img src="./gt_toy.jpg" width="600px"></img>
 
 ### UTIAS
 
