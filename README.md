@@ -1,13 +1,18 @@
 
 ## Multi-Robots Localization based on Sensor Fusion and Relative Observations
 
-Yingxue Wang, Lu Chen, Yuminghao Xiao, Jinrun Huang, Peter Wrobel
+Yingxue Wang, Lu Chen, Yuminghao Xiao, Jinrun Huang, Peter Wrobel - Team 1
 
 For NAVARCH 568 WN 2021 Final Project
 
 Practical implementation of multi-robot localization task using Extended Kalman Filter(EKF) and Particle Filter(PF) with odometry data, landmark measurements and relative measurements.  
 
 The implementation of EKF and PF correction step using relative robot location update follows the method proposed by <a href="https://ieeexplore.ieee.org/document/1570537">Martinelli et. al., 2005</a>. The filter update with fused relative measurements generally achieved better performance than the vanilla updates.
+
+Link to Presentation: <a href="https://youtu.be/J8GraaSHmFY">Martinelli et. al., 2005</a>.
+
+Link to Presentation Slides:  <a href="https://www.youtube.com/redirect?event=video_description&redir_token=QUFFLUhqa1JFSWJHT2ZlaVNvb2lweXRLSEc3OFlXTVBPZ3xBQ3Jtc0trYkt1R2g0ZGNRWVpmeUgtdTl1bWRHSnd0WmJ1TlI3YmNLYTNUWUgwSFRESTZ2T3RweVdsWE9CTWpKMGdXX3lVTVl2X0tMNlJ2WHpiUTJfbzNvNGVNbUZyMHlCcGZ4UEZQaU1Nb3FYZDE2bk1jb2doOA&q=https%3A%2F%2Fdrive.google.com%2Ffile%2Fd%2F1HMpufMHPl0anYYzkeTUJ5BBW0OmFLjr2%2Fview%3Fusp%3Dsharing">link</a>
+
 
 ## Environment Setup
 
