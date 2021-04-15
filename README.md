@@ -21,7 +21,7 @@ The toy problem data is a synthetic data create by the project group. It is crea
 
 <img src="./gt_toy.jpg" width="600px"></img>
 
-### UTIAS
+### UTIAS Multi-Robot Cooperative Localization and Mapping Dataset
 
 We used the <a href="http://asrl.utias.utoronto.ca/datasets/mrclam/">UTIAS Multi-Robot Cooperative Localization and Mapping Dataset</a> for testing our implementation in a real-world scenario.
 
