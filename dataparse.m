@@ -166,6 +166,7 @@ classdef dataparse
       %returns polar coordinates of robot2 relative to robot1
       function reso = rel_measure(obj ,RB_GT1, RB_GT2, var)
           
+          
           theta1 = RB_GT1(:,1);
           x1 = RB_GT1(:,2);
           y1 = RB_GT1(:,3);

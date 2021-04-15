@@ -20,7 +20,7 @@ function run_fused(numSteps, filter_name, if_toy_prob)
  %% Load Data   
   if if_toy_prob
    % Existing_Data dictates whether to generate new toy data
-     Existing_Data = 1;
+     Existing_Data = 0;
      if ~Existing_Data
      % generate the data set for the toy problem
        [X_ground_truth,landmark,measurement_z_landmark,...
@@ -194,43 +194,62 @@ for t = 1 : numSteps-1
              filter2.prediction(motionCommand(4:6,1));
              filter3.prediction(motionCommand(7:9,1));
             
-           % Correction with Landmark Measurements
            if ~if_toy_prob
-              
-              if measurement_z_landmark(1,t+1) ~= -1
-                     filter1.correction_landmark...
-                         (measurement_z_landmark(2:3,t+1),landmark(measurement_z_landmark(1,t+1),:));
-                     hold on;
-                     plot(landmark(measurement_z_landmark(1,t+1),1), landmark(measurement_z_landmark(1,t+1),2), 'kp');
-              end
-              if measurement_z_landmark(4,t+1) ~= -1
-                     filter2.correction_landmark...
-                         (measurement_z_landmark(5:6,t+1),landmark(measurement_z_landmark(4,t+1),:));
-                     plot(landmark(measurement_z_landmark(4,t+1),1), landmark(measurement_z_landmark(4,t+1),2), 'cp');
-              end
-              if measurement_z_landmark(7,t+1) ~= -1
-                     filter3.correction_landmark...
-                         (measurement_z_landmark(8:9,t+1),landmark(measurement_z_landmark(7,t+1),:));
-                     plot(landmark(measurement_z_landmark(7,t+1),1), landmark(measurement_z_landmark(7,t+1),2), 'mp'); % c, m
-              end
-              
-           else
                
-               % Recursive Correction with Landmark Measurements   
-                 filter1.correction_landmark(measurement_z_landmark(1:2,t+1),landmark);
-                 filter2.correction_landmark(measurement_z_landmark(3:4,t+1),landmark);
-                 filter3.correction_landmark(measurement_z_landmark(5:6,t+1),landmark);
+           % Correction with Landmark Measurements
+           
+              %{
+             if measurement_z_landmark(1,t+1) ~=-1
+                 measurement_z_landmark(2,t+1) = measurement_z_landmark(2,t+1);
+                 hold on;
+                 %[x,y] = pol2cart(measurement_z_landmark(2,t+1),measurement_z_landmark(3,t+1));
+                 %plot([landmark(measurement_z_landmark(1,t+1), 1)-x,landmark(measurement_z_landmark(1,t+1), 1)],...
+                            %[landmark(measurement_z_landmark(1,t+1), 2)-y,landmark(measurement_z_landmark(1,t+1), 2)], '-g');
 
-               % Recursive Correction with Relative Measurements
-                 relative_pos1 = [filter2.mu(:,1);filter3.mu(:,1)];
-                 relative_pos2 = [filter1.mu(:,1);filter3.mu(:,1)];
-                 relative_pos3 = [filter1.mu(:,1);filter2.mu(:,1)];
-                 filter1.correction_relative(measurement_z_relative(1:4,t+1),relative_pos1,Num);
-                 filter2.correction_relative(measurement_z_relative(5:8,t+1),relative_pos2,Num);
-                 filter3.correction_relative(measurement_z_relative(9:12,t+1),relative_pos3,Num);
-           end
+                   filter1.correction_landmark...
+                        (measurement_z_landmark(2:3,t+1),landmark(measurement_z_landmark(1,t+1), :)' );
+             end
+           %}
+             
+             if measurement_z_landmark(4,t+1) ~= -1
+                 hold on;
+                 %[x,y] = pol2cart(measurement_z_landmark(5,t+1),measurement_z_landmark(6,t+1));
+                 %plot([landmark(measurement_z_landmark(4,t+1), 1)-x,landmark(measurement_z_landmark(4,t+1), 1)],...
+                            %[landmark(measurement_z_landmark(4,t+1), 2)-y,landmark(measurement_z_landmark(4,t+1), 2)], '-b');
+
+                    filter2.correction_landmark...
+                        (measurement_z_landmark(5:6,t+1),landmark(measurement_z_landmark(4,t+1), :)' );
+             end
+             
+             
+
+             if measurement_z_landmark(7,t+1) ~= -1
+                    filter3.correction_landmark...
+                        (measurement_z_landmark(8:9,t+1),landmark(measurement_z_landmark(7,t+1), :)' );
+             end
+           %%}
                 
-              
+           else
+               hold on;
+              [x,y] = pol2cart(measurement_z_landmark(1,t+1),measurement_z_landmark(2,t+1));
+               plot([landmark(1)-x,landmark(1)],...
+                            [landmark(2)-y,landmark(2)]);
+              %filter1.correction_landmark(measurement_z_landmark(1:2,t+1),landmark);
+              %filter2.correction_landmark(measurement_z_landmark(3:4,t+1),landmark);
+              %filter3.correction_landmark(measurement_z_landmark(5:6,t+1),landmark);
+           end
+           
+            if t>0
+           % Recursive Correction with Relative Measurements
+             relative_pos1 = [filter2.mu(:,1);filter3.mu(:,1)];
+             relative_pos2 = [filter1.mu(:,1);filter3.mu(:,1)];
+             relative_pos3 = [filter1.mu(:,1);filter2.mu(:,1)];
+             filter1.correction_relative(measurement_z_relative(1:4,t+1),relative_pos1,Num);
+             %filter2.correction_relative(measurement_z_relative(5:8,t+1),relative_pos2,Num);
+             %filter3.correction_relative(measurement_z_relative(9:12,t+1),relative_pos3,Num);
+             end
+             
+           
            % Record the estimated postions
              filtered_robot(1:3,t) = filter1.mu(:,1);
              filtered_robot(4:6,t) = filter2.mu(:,1);
@@ -266,18 +285,23 @@ end
 
 %% Visualization
 %   cla
-  p1 = plot(X_ground_truth(1,:),X_ground_truth(2,:),'b*','markersize',5);
+hold on
+
+  title('PF with Relative Measurements Fused')
+for t = 1:numSteps-1
+  p1 = plot(X_ground_truth(1,t),X_ground_truth(2,t),'b*','markersize',5);
   hold on
-  p2 = plot(X_ground_truth(4,:),X_ground_truth(5,:),'bs','markersize',5);
+  p2 = plot(X_ground_truth(4,t),X_ground_truth(5,t),'bs','markersize',5);
   hold on
-  p3 = plot(X_ground_truth(7,:),X_ground_truth(8,:),'bd','markersize',5);
+  p3 = plot(X_ground_truth(7,t),X_ground_truth(8,t),'bd','markersize',5);
   hold on
-  p4 = plot(filtered_robot(1,:),filtered_robot(2,:),'r*','markersize',5);
+  p4 = plot(filtered_robot(1,t),filtered_robot(2,t),'r*','markersize',5);
   hold on
-  p5 = plot(filtered_robot(4,:),filtered_robot(5,:),'rs','markersize',5);
+  p5 = plot(filtered_robot(4,t),filtered_robot(5,t),'rs','markersize',5);
   hold on
-  p6 = plot(filtered_robot(7,:),filtered_robot(8,:),'rd','markersize',5);
+  p6 = plot(filtered_robot(7,t),filtered_robot(8,t),'rd','markersize',5);
   axis equal;
+  pause(0.05);
   hold on
   
   set(gcf,'Position',[0 0 1000 800]);
